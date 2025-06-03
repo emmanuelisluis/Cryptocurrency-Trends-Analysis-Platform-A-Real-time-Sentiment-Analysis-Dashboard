@@ -1,0 +1,146 @@
+.time-and-sales {
+    border: 1px solid #ccc;
+    padding: 15px;
+    border-radius: 5px;
+    background-color: #f9f9f9;
+    font-family: Arial, sans-serif;
+    max-height: 500px; /* Example max height */
+    display: flex;
+    flex-direction: column;
+}
+
+.time-and-sales h4 {
+    text-align: center;
+    margin-top: 0;
+    margin-bottom: 15px;
+    color: #333;
+}
+
+.filters-bar {
+    display: flex;
+    gap: 15px;
+    margin-bottom: 15px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #eee;
+    align-items: center;
+}
+
+.filters-bar label {
+    font-size: 0.9em;
+    color: #555;
+}
+
+.filters-bar input[type="number"],
+.filters-bar input[type="text"] { /* If you add text filters */
+    padding: 5px;
+    font-size: 0.9em;
+    border: 1px solid #ddd;
+    border-radius: 3px;
+    margin-left: 5px;
+    width: 80px; /* Adjust as needed */
+}
+
+.error-message {
+    color: #D8000C; /* Error red */
+    background-color: #FFD2D2; /* Light red background */
+    border: 1px solid #D8000C;
+    padding: 10px;
+    border-radius: 4px;
+    margin-bottom: 10px;
+    text-align: center;
+}
+
+.trades-log-container {
+    flex-grow: 1; /* Allows the log to fill available space */
+    overflow-y: hidden; /* All scrolling handled by .trades-log */
+    display: flex;
+    flex-direction: column;
+}
+
+.trades-log-header {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr 0.5fr; /* Adjust column ratios as needed */
+    font-weight: bold;
+    font-size: 0.85em;
+    padding: 8px 5px;
+    border-bottom: 1px solid #ddd;
+    background-color: #f0f0f0;
+    color: #333;
+}
+
+.trades-log-header span {
+    text-align: right;
+}
+.trades-log-header span:first-child {
+    text-align: left;
+}
+
+
+.trades-log {
+    overflow-y: auto; /* Enables vertical scrolling for the trades list */
+    font-size: 0.8em;
+    flex-grow: 1;
+}
+
+.trade-entry {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr 0.5fr; /* Must match header */
+    padding: 5px;
+    border-bottom: 1px dotted #eee;
+    line-height: 1.4;
+}
+
+.trade-entry:last-child {
+    border-bottom: none;
+}
+
+.trade-entry span {
+    text-align: right; /* Align numbers to the right */
+}
+.trade-entry span:first-child {
+    text-align: left; /* Align time to the left */
+}
+
+
+.trade-entry .side {
+    font-weight: bold;
+}
+
+.trade-entry.buy .side {
+    color: #00B167; /* Green for buy */
+}
+.trade-entry.buy {
+    /* Optional: slightly different background or border for buy trades */
+    /* background-color: #e6f7f0; */
+}
+
+
+.trade-entry.sell .side {
+    color: #FF5733; /* Red for sell */
+}
+.trade-entry.sell {
+    /* Optional: slightly different background or border for sell trades */
+    /* background-color: #fff0eb; */
+}
+
+.trade-entry.large-trade {
+    font-weight: bold; /* Makes the entire row bold */
+    /* Alternatively, target specific cells, e.g., .large-trade span:nth-child(3) for volume */
+    /* background-color: #fff3cd; */ /* Example: Light yellow background */
+}
+
+/* Optional: More specific styling for large buy/sell trades if needed */
+/* This helps if the default buy/sell colors don't stand out enough with the new background or font weight */
+.trade-entry.large-trade.buy .side {
+    /* color: #006400; */ /* Darker green */
+}
+
+.trade-entry.large-trade.sell .side {
+    /* color: #8B0000; */ /* Darker red */
+}
+
+/* Ensure all filter inputs have a similar appearance if not already covered */
+.filters-bar input[type="number"] {
+    /* width: 70px; */ /* Adjusted from 80px to potentially make more space if needed */
+    /* General styling for inputs is already present, this is just a placeholder for any tweaks */
+}

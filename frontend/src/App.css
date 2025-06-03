@@ -1,0 +1,57 @@
+.App {
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+.App-nav {
+  background-color: #282c34;
+  padding: 10px 0;
+}
+
+.App-nav ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  justify-content: center;
+}
+
+.App-nav li {
+  margin: 0 15px;
+}
+
+.App-nav a {
+  color: white;
+  text-decoration: none;
+  font-size: 1.1em;
+}
+
+.App-nav a:hover {
+  text-decoration: underline;
+}
+
+.App-main-content {
+  flex-grow: 1;
+  padding: 20px;
+}
+
+.App-footer {
+  background-color: #f1f1f1;
+  padding: 10px;
+  text-align: center;
+  font-size: 0.9em;
+  color: #555;
+  border-top: 1px solid #ddd;
+}
+
+/* Basic styling for links if not using a UI library */
+a {
+  color: #007bff;
+  text-decoration: none;
+}
+
+a:hover {
+  text-decoration: underline;
+}

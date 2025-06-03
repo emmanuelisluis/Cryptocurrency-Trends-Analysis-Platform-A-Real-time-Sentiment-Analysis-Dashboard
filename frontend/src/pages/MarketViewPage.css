@@ -1,0 +1,76 @@
+.market-view-page {
+    padding: 20px;
+    font-family: Arial, sans-serif;
+}
+
+.page-header {
+    margin-bottom: 30px;
+    border-bottom: 1px solid #eee;
+    padding-bottom: 10px;
+}
+
+.page-header h1 {
+    color: #333;
+    margin: 0;
+}
+
+.chart-section {
+    margin-bottom: 30px;
+    padding: 15px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    background-color: #f9f9f9;
+}
+
+.chart-section h2 {
+    margin-top: 0;
+    margin-bottom: 15px;
+    color: #555;
+    font-size: 1.5em;
+}
+
+/* Styling for loading/error messages within the chart component, if needed */
+.chart-loading, .chart-error {
+    text-align: center;
+    padding: 20px;
+    font-size: 1.1em;
+    color: #777;
+}
+
+.chart-error {
+    color: #D8000C; /* Error red */
+    background-color: #FFD2D2; /* Light red background */
+    border: 1px solid #D8000C;
+    border-radius: 4px;
+}
+
+/* Layout for side-by-side components */
+.market-data-layout {
+    display: flex;
+    flex-wrap: wrap; /* Allow wrapping on smaller screens if necessary */
+    gap: 20px; /* Space between components */
+}
+
+.order-book-depth-section,
+.time-and-sales-section {
+    flex: 1; /* Each takes up equal space in their row */
+    min-width: 300px; /* Minimum width before wrapping or shrinking too much */
+    /* The max-height for TimeAndSalesLog is set in its own CSS for scrolling */
+}
+
+.market-data-row {
+    display: flex;
+    flex-wrap: wrap; /* Allow items within a row to wrap if necessary */
+    gap: 20px; /* Space between components in the same row */
+    width: 100%; /* Each row takes full width of the parent layout */
+    margin-bottom: 20px; /* Space between rows */
+}
+
+.market-data-row:last-child {
+    margin-bottom: 0;
+}
+
+.footprint-chart-section {
+    flex-basis: 100%; /* Footprint chart takes the full width of its row */
+    /* min-width is already covered by .chart-section if needed, or set specific one here */
+}

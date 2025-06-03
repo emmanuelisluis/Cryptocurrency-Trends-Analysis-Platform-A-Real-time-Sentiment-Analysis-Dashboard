@@ -1,0 +1,123 @@
+.footprint-chart-container {
+    border: 1px solid #ccc;
+    padding: 15px;
+    border-radius: 5px;
+    background-color: #fdfdfd; /* Slightly off-white */
+    font-family: Arial, sans-serif;
+    margin-bottom: 20px;
+}
+
+.footprint-chart-container h3 {
+    text-align: center;
+    margin-top: 0;
+    margin-bottom: 15px;
+    color: #333;
+}
+
+.footprint-controls {
+    display: flex;
+    flex-wrap: wrap; /* Allow controls to wrap on smaller screens */
+    gap: 15px; /* Space between control groups */
+    margin-bottom: 20px;
+    padding: 10px;
+    background-color: #f0f0f0;
+    border-radius: 4px;
+    align-items: center; /* Vertically align items in the control bar */
+}
+
+.footprint-controls label {
+    font-size: 0.9em;
+    color: #555;
+    margin-right: 5px; /* Space between label and its input */
+}
+
+.footprint-controls select,
+.footprint-controls input[type="text"], /* For date inputs if not using react-datepicker */
+.footprint-controls .react-datepicker-wrapper input[type="text"], /* Target react-datepicker input */
+.footprint-controls button {
+    padding: 6px 10px;
+    font-size: 0.9em;
+    border: 1px solid #ddd;
+    border-radius: 3px;
+}
+
+.footprint-controls select {
+    min-width: 80px;
+}
+
+.footprint-controls .date-pickers {
+    display: flex;
+    gap: 10px; /* Space between start and end date pickers */
+    align-items: center;
+}
+
+.footprint-controls .date-pickers label {
+    display: flex; /* Align label text and datepicker input nicely */
+    align-items: center;
+    gap: 5px;
+}
+
+
+.footprint-controls button {
+    background-color: #007bff;
+    color: white;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+.footprint-controls button:hover {
+    background-color: #0056b3;
+}
+
+.footprint-controls button:disabled {
+    background-color: #ccc;
+    cursor: not-allowed;
+}
+
+.error-message { /* General error message styling, if not already global */
+    color: #D8000C;
+    background-color: #FFD2D2;
+    border: 1px solid #D8000C;
+    padding: 10px;
+    border-radius: 4px;
+    margin: 10px 0;
+    text-align: center;
+}
+
+/* Styles for SVG elements within the chart (these are illustrative) */
+.footprint-bar-candle-wick {
+    stroke: #555;
+    stroke-width: 1;
+}
+
+.footprint-bar-candle-body-buy {
+    fill: green;
+}
+
+.footprint-bar-candle-body-sell {
+    fill: red;
+}
+
+.footprint-cell-rect {
+    stroke: #f0f0f0; /* Light border for cells */
+    stroke-width: 0.5px;
+}
+
+.footprint-cell-text {
+    font-size: 8px; /* Adjust based on cell size and preference */
+    text-anchor: middle;
+    dominant-baseline: middle; /* Better vertical centering for SVG text */
+    fill: #333; /* Default text color */
+}
+
+.footprint-cell-poc {
+    /* Style for Point of Control cells, e.g., distinct border or background */
+    /* fill: rgba(255, 255, 0, 0.3); */ /* Example: light yellow highlight */
+    /* stroke: gold;
+    stroke-width: 1px; */
+}
+
+.footprint-bar-delta-text {
+    font-size: 10px;
+    text-anchor: middle;
+}

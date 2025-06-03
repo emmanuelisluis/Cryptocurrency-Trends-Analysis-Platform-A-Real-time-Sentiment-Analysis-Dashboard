@@ -1,13 +1,14 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
 import MarketViewPage from './pages/MarketViewPage';
-import './App.css'; // Basic app-wide styles
+import { GlobalMarketProvider } from './contexts/GlobalMarketContext'; // Import the provider
+import './App.css';
 
 function HomePage() {
   return (
     <div style={{ padding: '20px', textAlign: 'center' }}>
       <h1>Welcome to Crypto Dashboard</h1>
-      <p>Navigate to the Market View to see order book depth charts.</p>
+      <p>Navigate to the Market View to see various market data visualizations.</p>
       <nav>
         <Link to="/market">Go to Market View</Link>
       </nav>
@@ -15,18 +16,14 @@ function HomePage() {
   );
 }
 
-function App() {
+function AppContent() { // Renamed original App to AppContent
   return (
     <Router>
       <div className="App">
         <nav className="App-nav">
           <ul>
-            <li>
-              <Link to="/">Home</Link>
-            </li>
-            <li>
-              <Link to="/market">Market View</Link>
-            </li>
+            <li><Link to="/">Home</Link></li>
+            <li><Link to="/market">Market View</Link></li>
             {/* Add other global navigation links here */}
           </ul>
         </nav>
@@ -44,6 +41,15 @@ function App() {
         </footer>
       </div>
     </Router>
+  );
+}
+
+// New App component that wraps AppContent with the provider
+function App() {
+  return (
+    <GlobalMarketProvider>
+      <AppContent />
+    </GlobalMarketProvider>
   );
 }
 

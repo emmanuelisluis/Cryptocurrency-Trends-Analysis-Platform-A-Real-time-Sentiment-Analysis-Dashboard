@@ -1,8 +1,9 @@
 from fastapi import FastAPI
 from backend.app.api.endpoints import status as status_router
-from backend.app.api.endpoints import market_data as market_data_router # Added import
-from backend.app.globals import initialize_global_data_ingestion_service, get_data_ingestion_service, data_ingestion_service_instance # For lifespan
-import asyncio # For lifespan tasks
+from backend.app.api.endpoints import market_data as market_data_router
+from backend.app.api.endpoints import ml_predictions as ml_predictions_router # Added ML router import
+from backend.app.globals import initialize_global_data_ingestion_service, get_data_ingestion_service, data_ingestion_service_instance
+import asyncio
 import logging
 
 logger = logging.getLogger(__name__)
@@ -15,7 +16,8 @@ app = FastAPI(title="Crypto Dashboard Backend")
 
 # Include routers
 app.include_router(status_router.router, prefix="/api/v1", tags=["Status"])
-app.include_router(market_data_router.router, prefix="/api/v1/market_data", tags=["Market Data"]) # Added router
+app.include_router(market_data_router.router, prefix="/api/v1/market_data", tags=["Market Data"])
+app.include_router(ml_predictions_router.router, prefix="/api/v1/ml", tags=["ML Predictions"]) # Include ML router
 
 # Lifespan events to manage DataIngestionService
 @app.on_event("startup")

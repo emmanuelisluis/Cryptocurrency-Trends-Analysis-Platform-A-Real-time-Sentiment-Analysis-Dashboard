@@ -1,0 +1,49 @@
+.global-controls-bar {
+    display: flex;
+    flex-wrap: wrap; /* Allow controls to wrap on smaller screens */
+    gap: 20px; /* Space between control groups */
+    padding: 10px 15px; /* Standard padding */
+    background-color: #e9ecef; /* Light grey background, distinct from page content */
+    border-bottom: 1px solid #ced4da; /* Subtle border */
+    margin-bottom: 20px; /* Space below the bar */
+    align-items: center; /* Vertically align items */
+}
+
+.control-group {
+    display: flex;
+    align-items: center;
+    gap: 8px; /* Space between label and select/input */
+}
+
+.control-group label {
+    font-weight: 500; /* Slightly less than bold */
+    font-size: 0.9rem;
+    color: #495057; /* Dark grey text */
+}
+
+.control-group select,
+.control-group input[type="text"], /* For potential future text inputs */
+.control-group input[type="number"] { /* For potential future number inputs */
+    padding: 6px 10px;
+    border-radius: 4px;
+    border: 1px solid #ced4da;
+    font-size: 0.9rem;
+    background-color: #fff;
+    color: #495057;
+    min-width: 120px; /* Ensure select boxes are not too small */
+}
+
+.control-group select:disabled {
+    background-color: #e9ecef;
+    color: #6c757d;
+    cursor: not-allowed;
+}
+
+/* Specific styling for better visual hierarchy if needed */
+#exchange-select {
+    /* font-weight: bold; */ /* Example: make exchange stand out a bit */
+}
+
+#symbol-select {
+    /* Specific styles if needed */
+}

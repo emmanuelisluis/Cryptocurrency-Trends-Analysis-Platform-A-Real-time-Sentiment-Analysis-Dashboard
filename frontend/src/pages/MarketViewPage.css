@@ -70,7 +70,18 @@
     margin-bottom: 0;
 }
 
-.footprint-chart-section {
-    flex-basis: 100%; /* Footprint chart takes the full width of its row */
+.footprint-chart-section,
+.volume-profile-chart-section { /* Add new section here */
+    flex-basis: 100%; /* These charts take the full width of their row */
     /* min-width is already covered by .chart-section if needed, or set specific one here */
+}
+
+.no-symbol-selected-message {
+    padding: 20px;
+    text-align: center;
+    font-size: 1.1em;
+    color: #777;
+    background-color: #f9f9f9;
+    border: 1px dashed #ddd;
+    border-radius: 5px;
 }

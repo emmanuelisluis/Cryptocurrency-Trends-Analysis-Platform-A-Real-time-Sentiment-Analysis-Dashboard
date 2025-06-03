@@ -1,0 +1,142 @@
+/* Styles for OrderBookDepthChart.tsx component */
+
+.order-book-depth-chart-wrapper { /* Main container for the chart and its info sections */
+    border: 1px solid #e0e0e0;
+    padding: 15px;
+    border-radius: 5px;
+    background-color: #fcfcfc;
+}
+
+.order-book-depth-chart-wrapper h4 { /* Chart Title */
+    text-align: center;
+    margin-top: 0;
+    margin-bottom: 10px;
+    color: #333;
+    font-size: 1.1em;
+}
+
+.chart-loading-message,
+.chart-error-message,
+.chart-no-data-message {
+    text-align: center;
+    padding: 20px;
+    font-size: 1em;
+    color: #777;
+}
+
+.chart-error-message {
+    color: #D8000C;
+    background-color: #FFD2D2;
+    border: 1px solid #D8000C;
+    border-radius: 4px;
+}
+
+.chart-refresh-indicator {
+    font-size: 0.8em;
+    text-align: center;
+    font-style: italic;
+    color: #888;
+    margin-bottom: 10px;
+}
+
+.chart-axes-note {
+    font-size: 0.8em;
+    text-align: center;
+    color: #555;
+    margin-top: 5px;
+}
+
+/* Styling for Imbalance Display */
+.order-book-imbalances {
+    margin-top: 20px;
+    padding: 10px;
+    border: 1px solid #eee;
+    border-radius: 4px;
+    background-color: #f9f9f9;
+}
+
+.order-book-imbalances h4 { /* Title for Imbalance section */
+    margin-top: 0;
+    margin-bottom: 10px;
+    font-size: 1em;
+    color: #444;
+    border-bottom: 1px solid #e0e0e0;
+    padding-bottom: 5px;
+}
+
+.imbalance-level {
+    margin-bottom: 10px;
+    padding-bottom: 8px;
+    border-bottom: 1px dashed #f0f0f0;
+    font-size: 0.9em;
+}
+
+.imbalance-level:last-child {
+    margin-bottom: 0;
+    padding-bottom: 0;
+    border-bottom: none;
+}
+
+.imbalance-level p {
+    margin: 3px 0;
+    color: #333;
+}
+
+.imbalance-bar-container { /* Container for the visual bid/ask bar */
+    display: flex;
+    height: 18px;
+    background-color: #ddd;
+    border-radius: 3px;
+    overflow: hidden;
+    margin-top: 5px;
+}
+
+.imbalance-bar-bid {
+    background-color: rgba(0, 177, 103, 0.7); /* Green for bids */
+    height: 100%;
+    transition: width 0.3s ease-in-out;
+    text-align: center;
+    color: white;
+    font-size: 0.8em;
+    line-height: 18px; /* To center text vertically */
+}
+
+.imbalance-bar-ask {
+    background-color: rgba(255, 87, 51, 0.7); /* Red for asks */
+    height: 100%;
+    transition: width 0.3s ease-in-out;
+    text-align: center;
+    color: white;
+    font-size: 0.8em;
+    line-height: 18px; /* To center text vertically */
+}
+
+
+/* Styling for OBDG Display */
+.order-book-obdg-stats {
+    margin-top: 15px;
+    padding: 10px;
+    border: 1px solid #e8e8e8;
+    border-radius: 4px;
+    background-color: #fbfbfb;
+    font-size: 0.9em;
+}
+
+.order-book-obdg-stats h5 { /* Title for OBDG section */
+    margin-top: 0;
+    margin-bottom: 8px;
+    font-size: 1em; /* Slightly smaller than h4 */
+    color: #444;
+    border-bottom: 1px solid #eaeaea;
+    padding-bottom: 5px;
+}
+
+.order-book-obdg-stats p {
+    margin: 5px 0;
+    color: #333;
+    line-height: 1.4;
+}
+
+.order-book-obdg-stats strong {
+    color: #111;
+}

@@ -1,0 +1,145 @@
+.cvd-chart-container {
+    border: 1px solid #ccc;
+    padding: 15px;
+    border-radius: 5px;
+    background-color: #fdfdfd;
+    font-family: Arial, sans-serif;
+    margin-bottom: 20px;
+}
+
+.cvd-chart-container h4 {
+    text-align: center;
+    margin-top: 0;
+    margin-bottom: 15px;
+    color: #333;
+}
+
+.cvd-controls {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 15px;
+    margin-bottom: 20px;
+    padding: 10px;
+    background-color: #f0f0f0;
+    border-radius: 4px;
+    align-items: center;
+}
+
+.cvd-controls label {
+    font-size: 0.9em;
+    color: #555;
+    margin-right: 5px;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.cvd-controls select,
+.cvd-controls .react-datepicker-wrapper input[type="text"], /* DatePicker input */
+.cvd-controls button {
+    padding: 6px 10px;
+    font-size: 0.9em;
+    border: 1px solid #ddd;
+    border-radius: 3px;
+}
+
+.cvd-controls select {
+    min-width: 100px;
+}
+
+.cvd-controls button {
+    background-color: #007bff;
+    color: white;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+.cvd-controls button:hover {
+    background-color: #0056b3;
+}
+
+.cvd-controls button:disabled {
+    background-color: #ccc;
+    cursor: not-allowed;
+}
+
+.error-message { /* Shared error message styling, if already defined globally, this can be removed */
+    color: #D8000C;
+    background-color: #FFD2D2;
+    border: 1px solid #D8000C;
+    padding: 10px;
+    border-radius: 4px;
+    margin: 10px 0;
+    text-align: center;
+}
+
+/* Recharts specific overrides if needed */
+.recharts-wrapper .recharts-yAxis .recharts-text.recharts-cartesian-axis-tick-value {
+    font-size: 0.85em;
+}
+
+.recharts-wrapper .recharts-xAxis .recharts-text.recharts-cartesian-axis-tick-value {
+    font-size: 0.85em;
+}
+
+.recharts-tooltip-wrapper {
+    font-size: 0.9em;
+    border-radius: 3px !important;
+    border: 1px solid #ccc !important;
+    background-color: rgba(255, 255, 255, 0.9) !important;
+}
+
+/* Ensure DatePicker input is not overly wide */
+.cvd-controls .react-datepicker-wrapper input[type="text"] {
+    width: auto; /* Or a specific width like 150px */
+}
+
+.divergence-controls {
+    display: flex;
+    gap: 10px;
+    margin-top: -10px; /* Pull it closer to the controls above if .cvd-controls has margin-bottom */
+    margin-bottom: 10px;
+    padding: 8px 10px;
+    background-color: #f7f7f7; /* Slightly different background for this bar */
+    border-radius: 4px;
+    align-items: center;
+}
+
+.divergence-controls button {
+    padding: 5px 10px;
+    font-size: 0.85em;
+    border: 1px solid #ccc;
+    border-radius: 3px;
+    background-color: #e9e9e9;
+    cursor: pointer;
+}
+
+.divergence-controls button:hover {
+    background-color: #dcdcdc;
+}
+
+.divergence-controls button:disabled {
+    background-color: #f5f5f5;
+    color: #aaa;
+    cursor: not-allowed;
+}
+
+.divergence-controls button.active {
+    background-color: #cce5ff; /* Light blue when active */
+    border-color: #007bff;
+    color: #004085;
+}
+
+.divergence-controls .draw-status {
+    font-size: 0.85em;
+    color: #555;
+    font-style: italic;
+}
+
+/* Styling for the SVG lines themselves (within the chart) */
+.custom-divergence-lines line {
+    /* Default style for custom lines */
+    /* stroke: purple; */ /* Set in component logic */
+    /* stroke-width: 2; */ /* Set in component logic */
+    /* Other SVG line properties like stroke-opacity can be set here if needed */
+}

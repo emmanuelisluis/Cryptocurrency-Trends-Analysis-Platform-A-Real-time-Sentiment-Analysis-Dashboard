@@ -1,0 +1,90 @@
+version: '3.8'
+
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: crypto-dashboard-backend
+    ports:
+      - "8000:8000" # Exposes backend API on host port 8000
+    environment:
+      # DATABASE_URL is crucial and should point to the 'db' service.
+      # Format: postgresql://<POSTGRES_USER>:<POSTGRES_PASSWORD>@db:<DB_PORT>/<POSTGRES_DB>
+      # The values for user, password, db name, and port should match the 'db' service's environment.
+      - DATABASE_URL=postgresql://${POSTGRES_USER:-user}:${POSTGRES_PASSWORD:-password}@db:5432/${POSTGRES_DB:-crypto_dashboard}
+      - APP_HOST=0.0.0.0 # Ensure FastAPI binds to all interfaces within the container
+      - APP_PORT=8000
+      - LOG_LEVEL=${LOG_LEVEL:-INFO} # Example, can be set in .env
+
+      # ML Model Paths (ensure these paths are valid *inside the container's filesystem*)
+      # If using volumes to mount models, paths would be like /app/ml_models/...
+      # If models are baked into the image, paths would be relative to /app in container.
+      # The backend Dockerfile copies its content to /app.
+      - MOMENTUM_SUSTAINABILITY_MODEL_PATH=/app/ml_models/momentum_model.pkl
+      - BREAKOUT_VIABILITY_MODEL_PATH=/app/ml_models/breakout_model.pkl
+      - ABSORPTION_OUTCOME_MODEL_PATH=/app/ml_models/absorption_model.pkl
+      # Add any other necessary backend environment variables (e.g., API keys if used by backend)
+    volumes:
+      # For development: hot-reloading of backend code.
+      # Mounts the host's ./backend directory into /app in the container.
+      # For production, this volume mount should typically be removed to use code baked into the image.
+      - ./backend:/app
+      # Example for ML models if they are not part of the image and you want to mount them from host:
+      # - ./backend/app/ml_models:/app/ml_models
+      # This assumes your .pkl files are in backend/app/ml_models on your host.
+      # If the Dockerfile copies them, this volume isn't strictly needed for models unless you're updating them live.
+    depends_on:
+      db:
+        condition: service_healthy # Wait for DB to be healthy (requires healthcheck in db service)
+    networks:
+      - crypto-net
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: crypto-dashboard-frontend
+    ports:
+      - "3000:80" # Exposes frontend (Nginx) on host port 3000
+    # environment:
+      # Can pass build arguments to frontend Dockerfile here if needed, e.g.:
+      # REACT_APP_API_BASE_URL=/api/v1 # If Nginx on frontend proxies to backend
+    depends_on:
+      - backend # Ensures backend is started, useful if frontend proxies to backend
+    networks:
+      - crypto-net
+    restart: unless-stopped
+
+  db:
+    image: timescale/timescaledb-ha:pg14-ts2.10-latest # Using HA image for TimescaleDB features, pg14
+    # Or use 'timescale/timescaledb:latest-pg14' for standard TimescaleDB
+    container_name: crypto-dashboard-db
+    ports:
+      - "5432:5432" # Exposes TimescaleDB on host port 5432
+    environment:
+      # These are used by the TimescaleDB image to initialize the database.
+      # Also referenced by backend's DATABASE_URL.
+      - POSTGRES_USER=${POSTGRES_USER:-user}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-password}
+      - POSTGRES_DB=${POSTGRES_DB:-crypto_dashboard}
+    volumes:
+      - timescaledb_data:/var/lib/postgresql/data # Persists database data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-user} -d ${POSTGRES_DB:-crypto_dashboard}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - crypto-net
+    restart: unless-stopped
+
+networks:
+  crypto-net:
+    driver: bridge # Default bridge network
+
+volumes:
+  timescaledb_data: # Defines the named volume for TimescaleDB data persistence
+    driver: local
+```

@@ -3,10 +3,15 @@ from typing import Optional, List
 from sqlalchemy.orm import Session
 
 from backend.app.db.models import OrderBookSnapshotDB
-from backend.app.models.order_book_models import OrderBookSnapshotAPIResponse, OrderBookLevelAPI, ImbalanceAtDepth
-from backend.app.core.config import settings # For imbalance depth levels
+from backend.app.models.order_book_models import OrderBookSnapshotAPIResponse, OrderBookLevelAPI, ImbalanceAtDepth, OBDGData # Added OBDGData
+from backend.app.core.config import settings # For imbalance depth levels & OBDG levels (if moved to config)
 
 logger = logging.getLogger(__name__)
+
+# OBDG Calculation Parameters (can be moved to config.py if desired)
+NEAR_MARKET_LEVELS_OBDG = 5
+FAR_MARKET_START_LEVEL_OBDG = 6 # Start from the 6th level (index 5)
+FAR_MARKET_END_LEVEL_OBDG = 20  # Up to the 20th level (index 19)
 
 def _calculate_imbalances(
     bids: List[OrderBookLevelAPI],
@@ -49,10 +54,52 @@ def _calculate_imbalances(
         )
     return imbalances
 
+def _calculate_obdg(
+    bids: List[OrderBookLevelAPI],
+    asks: List[OrderBookLevelAPI],
+    near_depth: int,
+    far_start: int,
+    far_end: int
+) -> OBDGData:
+    """
+    Helper function to calculate Order Book Depth Gradient (OBDG) data.
+    Assumes bids and asks are sorted best price first.
+    """
+    actual_num_bid_levels = len(bids)
+    actual_num_ask_levels = len(asks)
+
+    # Calculate near volumes
+    near_bid_vol = sum(b.quantity for b in bids[:min(near_depth, actual_num_bid_levels)])
+    near_ask_vol = sum(a.quantity for a in asks[:min(near_depth, actual_num_ask_levels)])
+
+    # Calculate far volumes (adjust for 0-based indexing for slices)
+    # Ensure far_start_idx is not less than near_depth to avoid overlap if misconfigured
+    far_start_idx = max(near_depth, far_start -1)
+
+    far_bid_vol = sum(b.quantity for b in bids[min(far_start_idx, actual_num_bid_levels):min(far_end, actual_num_bid_levels)])
+    far_ask_vol = sum(a.quantity for a in asks[min(far_start_idx, actual_num_ask_levels):min(far_end, actual_num_ask_levels)])
+
+    bid_ratio_nf = near_bid_vol / far_bid_vol if far_bid_vol > 0.0000001 else None # Avoid division by zero or tiny values
+    ask_ratio_nf = near_ask_vol / far_ask_vol if far_ask_vol > 0.0000001 else None
+
+    total_near_vol = near_bid_vol + near_ask_vol
+    total_far_vol = far_bid_vol + far_ask_vol
+    overall_gradient = total_near_vol / total_far_vol if total_far_vol > 0.0000001 else None
+
+    return OBDGData(
+        near_market_depth=near_depth,
+        far_market_depth_start=far_start, # Report originally intended config
+        far_market_depth_end=far_end,     # Report originally intended config
+        bid_ratio_near_to_far=bid_ratio_nf,
+        ask_ratio_near_to_far=ask_ratio_nf,
+        overall_gradient_strength=overall_gradient
+    )
+
+
 def get_latest_order_book(db: Session, exchange_name: str, symbol_name: str) -> Optional[OrderBookSnapshotAPIResponse]:
     """
     Fetches the most recent order book snapshot for the given exchange and symbol.
-    Calculates and includes order book imbalances.
+    Calculates and includes order book imbalances and OBDG data.
     Uses synchronous SQLAlchemy session.
     """
     try:
@@ -89,6 +136,15 @@ def get_latest_order_book(db: Session, exchange_name: str, symbol_name: str) -> 
             depth_levels=settings.ORDER_BOOK_IMBALANCE_DEPTH_LEVELS
         )
 
+        # Calculate OBDG data
+        obdg_data = _calculate_obdg(
+            bids=bids_api,
+            asks=asks_api,
+            near_depth=NEAR_MARKET_LEVELS_OBDG,
+            far_start=FAR_MARKET_START_LEVEL_OBDG,
+            far_end=FAR_MARKET_END_LEVEL_OBDG
+        )
+
         response = OrderBookSnapshotAPIResponse(
             timestamp=latest_order_book_db.timestamp,
             symbol=latest_order_book_db.symbol,
@@ -96,7 +152,8 @@ def get_latest_order_book(db: Session, exchange_name: str, symbol_name: str) -> 
             bids=bids_api,
             asks=asks_api,
             last_update_id=latest_order_book_db.last_update_id,
-            imbalances=imbalance_data # Populate the new field
+            imbalances=imbalance_data,
+            obdg_data=obdg_data # Populate the new field
         )
         return response
 

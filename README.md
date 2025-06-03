@@ -23,3 +23,7 @@ This project is a cryptocurrency dashboard that displays real-time data and hist
 ## Contributing
 
 (Instructions to be added)
+
+## Documentation
+
+Comprehensive documentation for the project, including technical architecture, user guides, and setup instructions, can be found in the [./docs](./docs/README.md) directory.

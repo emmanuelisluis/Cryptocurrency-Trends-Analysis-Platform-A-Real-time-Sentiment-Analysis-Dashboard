@@ -69,6 +69,98 @@
     background-color: #0056b3;
 }
 
+/* Specifics for Absorption Outcome Prediction */
+.absorption-prediction-display {
+    border: 1px solid #6f42c1; /* Purple border for absorption theme */
+    background-color: #f0eaff; /* Light purple background */
+}
+.absorption-prediction-display h5 { color: #4A148C; } /* Darker purple for title */
+.absorption-prediction-display button { background-color: #6f42c1; }
+.absorption-prediction-display button:hover { background-color: #563d7c; }
+
+/* Make individual price level cells in footprint chart indicate clickability for absorption */
+.footprint-price-level {
+    /* cursor: cell; /* This was in JSX, can be here too if preferred globally for all price levels */
+}
+
+/* Container for all prediction displays */
+.predictions-area {
+    display: flex;
+    flex-direction: column; /* Stack prediction boxes */
+    gap: 10px; /* Space between different prediction boxes */
+    margin-top: 10px;
+    margin-bottom: 10px;
+}
+
+.prediction-display { /* Common styling for all prediction boxes */
+    padding: 10px;
+    border-radius: 4px;
+    font-size: 0.9em;
+}
+
+.prediction-display h5 {
+    margin-top: 0;
+    margin-bottom: 8px;
+    font-size: 1em;
+}
+
+.prediction-display p {
+    margin: 4px 0;
+}
+
+.prediction-display button { /* Common dismiss button style */
+    margin-top: 8px;
+    padding: 3px 8px;
+    font-size: 0.85em;
+    color: white;
+    border: none;
+    border-radius: 3px;
+    cursor: pointer;
+}
+
+/* Specifics for Momentum Prediction (already styled, ensure consistency) */
+.momentum-prediction-display {
+    border: 1px solid #007bff;
+    background-color: #e7f3ff;
+}
+.momentum-prediction-display h5 { color: #004085; }
+.momentum-prediction-display button { background-color: #007bff; }
+.momentum-prediction-display button:hover { background-color: #0056b3; }
+
+
+/* Specifics for Breakout Viability Prediction */
+.breakout-prediction-display {
+    border: 1px solid #28a745; /* Green border for breakout theme */
+    background-color: #e9f7ef; /* Light green background */
+}
+.breakout-prediction-display h5 { color: #155724; } /* Darker green for title */
+.breakout-prediction-display button { background-color: #28a745; }
+.breakout-prediction-display button:hover { background-color: #1e7e34; }
+
+.breakout-level-input {
+    margin-top: 5px;
+    margin-bottom: 15px;
+    padding: 8px;
+    background-color: #f8f9fa;
+    border: 1px solid #eee;
+    border-radius: 4px;
+    font-size: 0.85em;
+}
+.breakout-level-input label {
+    margin-right: 5px;
+    color: #555;
+}
+.breakout-level-input input[type="number"] {
+    width: 100px;
+    padding: 4px;
+    border: 1px solid #ccc;
+    border-radius: 3px;
+}
+.breakout-level-input small {
+    margin-left: 10px;
+    color: #777;
+}
+
 .footprint-controls button:disabled {
     background-color: #ccc;
     cursor: not-allowed;
@@ -84,40 +176,148 @@
     text-align: center;
 }
 
-/* Styles for SVG elements within the chart (these are illustrative) */
-.footprint-bar-candle-wick {
+/* Styles for SVG elements within the chart */
+.footprint-bar .candle-wick { /* Target within a bar context */
     stroke: #555;
     stroke-width: 1;
 }
 
-.footprint-bar-candle-body-buy {
-    fill: green;
+.footprint-bar .candle-body.bullish {
+    fill: #26a69a; /* Example: TradingView green */
 }
 
-.footprint-bar-candle-body-sell {
-    fill: red;
+.footprint-bar .candle-body.bearish {
+    fill: #ef5350; /* Example: TradingView red */
 }
 
-.footprint-cell-rect {
-    stroke: #f0f0f0; /* Light border for cells */
+.footprint-price-level .footprint-cell-rect { /* Base style for all cells */
+    fill: rgba(230, 230, 230, 0.1); /* Very light, almost transparent base */
+    stroke: #e0e0e0; /* Light border for cells */
     stroke-width: 0.5px;
 }
 
-.footprint-cell-text {
-    font-size: 8px; /* Adjust based on cell size and preference */
-    text-anchor: middle;
-    dominant-baseline: middle; /* Better vertical centering for SVG text */
-    fill: #333; /* Default text color */
+.footprint-price-level .footprint-cell-rect.poc {
+    stroke: #ffd700; /* Gold border for Point of Control */
+    stroke-width: 1px;
+    fill: rgba(255, 215, 0, 0.15); /* Light gold fill for POC */
 }
 
-.footprint-cell-poc {
-    /* Style for Point of Control cells, e.g., distinct border or background */
-    /* fill: rgba(255, 255, 0, 0.3); */ /* Example: light yellow highlight */
-    /* stroke: gold;
-    stroke-width: 1px; */
+.footprint-price-level .footprint-cell-rect.imbalance-ask {
+    fill: rgba(0, 200, 0, 0.4); /* Stronger green for ask imbalance */
+}
+
+.footprint-price-level .footprint-cell-rect.imbalance-bid {
+    fill: rgba(200, 0, 0, 0.4); /* Stronger red for bid imbalance */
+}
+
+.footprint-price-level .footprint-cell-text {
+    /* font-size: 8px; /* Set dynamically in component for now */
+    text-anchor: middle;
+    dominant-baseline: middle;
+    fill: #222; /* Darker text for better readability on varied backgrounds */
+    pointer-events: none; /* So text doesn't interfere with tooltip on rect */
+}
+
+.footprint-price-level .footprint-price-delta {
+    /* font-size: 7px; /* Set dynamically in component for now */
+    text-anchor: middle;
+    dominant-baseline: middle;
+    pointer-events: none;
+}
+
+.footprint-price-delta.positive {
+    fill: #107c10; /* Darker green for positive delta text */
+}
+
+.footprint-price-delta.negative {
+    fill: #c40000; /* Darker red for negative delta text */
+}
+
+.footprint-price-delta.neutral {
+    fill: #666; /* Grey for zero delta */
 }
 
 .footprint-bar-delta-text {
-    font-size: 10px;
+    /* font-size: 10px; /* Set in component */
     text-anchor: middle;
+    font-weight: bold;
+}
+
+.footprint-bar-delta-text.positive {
+    fill: #107c10;
+}
+.footprint-bar-delta-text.negative {
+    fill: #c40000;
+}
+
+/* Unfinished Auction Highlighting */
+.footprint-price-level .footprint-cell-rect.unfinished-auction-low {
+    /* Example: a thicker border or a different fill to indicate absorption/unfinished business */
+    /* stroke: #007bff; */ /* Blue border */
+    /* stroke-width: 1.5px; */
+    fill: rgba(173, 216, 230, 0.5); /* Light blue fill */
+}
+
+.footprint-price-level .footprint-cell-rect.unfinished-auction-high {
+    /* Example: a thicker border or a different fill */
+    /* stroke: #ffA500; */ /* Orange border */
+    /* stroke-width: 1.5px; */
+    fill: rgba(255, 228, 181, 0.5); /* Light orange/peach fill (moccasin) */
+}
+
+/* Ensure unfinished auction highlights can combine with POC or imbalance if needed, or override */
+/* For example, if POC is also an unfinished auction, you might want both visual cues. */
+/* Current CSS might have the last class in the component's className string take precedence for `fill`. */
+/* Specificity or layering (e.g. using border for one, fill for another) is key. */
+/* If POC uses stroke, and unfinished auction uses fill, they can co-exist visually. */
+/* Current POC uses stroke and a light fill. Unfinished auction uses fill. */
+/* Unfinished auction fill might override POC fill if both classes are applied. */
+/* To ensure POC gold border is visible on an unfinished auction blue/orange fill: */
+.footprint-price-level .footprint-cell-rect.poc.unfinished-auction-low,
+.footprint-price-level .footprint-cell-rect.poc.unfinished-auction-high {
+    stroke: #ffd700; /* Gold border for Point of Control */
+    stroke-width: 1.5px; /* Make POC border slightly thicker to stand out */
+}
+
+/* Momentum Prediction Display */
+.prediction-status {
+    text-align: center;
+    padding: 10px;
+    font-style: italic;
+    color: #007bff;
+}
+
+.momentum-prediction-display {
+    margin-top: 15px;
+    padding: 10px;
+    border: 1px solid #007bff; /* Blue border to associate with predictions */
+    border-radius: 4px;
+    background-color: #e7f3ff; /* Light blue background */
+    font-size: 0.9em;
+}
+
+.momentum-prediction-display h5 {
+    margin-top: 0;
+    margin-bottom: 8px;
+    color: #004085; /* Darker blue for title */
+    font-size: 1em;
+}
+
+.momentum-prediction-display p {
+    margin: 4px 0;
+}
+
+.momentum-prediction-display button {
+    margin-top: 8px;
+    padding: 3px 8px;
+    font-size: 0.85em;
+    background-color: #007bff;
+    color: white;
+    border: none;
+    border-radius: 3px;
+    cursor: pointer;
+}
+
+.momentum-prediction-display button:hover {
+    background-color: #0056b3;
 }

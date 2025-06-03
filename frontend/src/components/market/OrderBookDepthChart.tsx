@@ -8,8 +8,8 @@ import {
     Tooltip,
     CartesianGrid,
     Legend,
-} from 'recharts'; // Assuming recharts is installed
-import { fetchOrderBookSnapshot, OrderBookSnapshot, ImbalanceAtDepth } from '../../services/marketDataService'; // Added ImbalanceAtDepth
+} from 'recharts';
+import { fetchOrderBookSnapshot, OrderBookSnapshot, ImbalanceAtDepth, OBDGData } from '../../services/marketDataService'; // Added OBDGData
 
 interface OrderBookDepthChartProps {
     exchange: string;
@@ -86,6 +86,25 @@ const OrderBookImbalanceDisplay: React.FC<{ imbalances: ImbalanceAtDepth[] }> = 
                     </div>
                 </div>
             ))}
+        </div>
+    );
+};
+
+const OBDGDisplay: React.FC<{ obdgData: OBDGData }> = ({ obdgData }) => {
+    if (!obdgData) return <p>No OBDG data available.</p>;
+
+    const formatRatio = (ratio?: number | null) =>
+        (ratio !== null && ratio !== undefined ? ratio.toFixed(2) : 'N/A');
+
+    return (
+        <div className="order-book-obdg-stats" style={{ marginTop: '15px', padding: '10px', border: '1px solid #eee', borderRadius: '4px', fontSize: '0.9em' }}>
+            <h5 style={{marginTop: 0, marginBottom: '8px', borderBottom: '1px solid #f0f0f0', paddingBottom: '5px'}}>
+                Order Book Depth Gradient
+                (Near: {obdgData.near_market_depth} vs Far: {obdgData.far_market_depth_start}-{obdgData.far_market_depth_end})
+            </h5>
+            <p>Bid Ratio (Near/Far): <strong>{formatRatio(obdgData.bid_ratio_near_to_far)}</strong></p>
+            <p>Ask Ratio (Near/Far): <strong>{formatRatio(obdgData.ask_ratio_near_to_far)}</strong></p>
+            <p>Overall Gradient (Near/Far): <strong>{formatRatio(obdgData.overall_gradient_strength)}</strong></p>
         </div>
     );
 };
@@ -207,8 +226,13 @@ const OrderBookDepthChart: React.FC<OrderBookDepthChartProps> = ({
             </p>
 
             {/* Display Imbalance Data */}
-            {orderBookData.imbalances && (
+            {orderBookData.imbalances && orderBookData.imbalances.length > 0 && (
                 <OrderBookImbalanceDisplay imbalances={orderBookData.imbalances} />
+            )}
+
+            {/* Display OBDG Data */}
+            {orderBookData.obdg_data && (
+                <OBDGDisplay obdgData={orderBookData.obdg_data} />
             )}
         </div>
     );

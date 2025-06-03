@@ -1,0 +1,123 @@
+.volume-profile-chart-container {
+    border: 1px solid #ccc;
+    padding: 15px;
+    border-radius: 5px;
+    background-color: #fdfdfd;
+    font-family: Arial, sans-serif;
+    margin-bottom: 20px;
+}
+
+.volume-profile-chart-container h4 {
+    text-align: center;
+    margin-top: 0;
+    margin-bottom: 15px;
+    color: #333;
+}
+
+.vp-controls {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 15px;
+    margin-bottom: 20px;
+    padding: 10px;
+    background-color: #f0f0f0;
+    border-radius: 4px;
+    align-items: center;
+}
+
+.vp-controls label {
+    font-size: 0.9em;
+    color: #555;
+    margin-right: 5px;
+    display: flex; /* For aligning label text with input */
+    align-items: center;
+    gap: 5px;
+}
+
+.vp-controls select,
+.vp-controls input[type="date"],
+.vp-controls input[type="datetime-local"],
+.vp-controls input[type="number"],
+.vp-controls .react-datepicker-wrapper input[type="text"], /* DatePicker input */
+.vp-controls button {
+    padding: 6px 10px;
+    font-size: 0.9em;
+    border: 1px solid #ddd;
+    border-radius: 3px;
+}
+
+.vp-controls select {
+    min-width: 100px;
+}
+
+.vp-controls input[type="number"] {
+    width: 80px;
+}
+
+.vp-controls button {
+    background-color: #007bff;
+    color: white;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+.vp-controls button:hover {
+    background-color: #0056b3;
+}
+
+.vp-controls button:disabled {
+    background-color: #ccc;
+    cursor: not-allowed;
+}
+
+.error-message { /* Shared error message styling */
+    color: #D8000C;
+    background-color: #FFD2D2;
+    border: 1px solid #D8000C;
+    padding: 10px;
+    border-radius: 4px;
+    margin: 10px 0;
+    text-align: center;
+}
+
+/* Recharts specific overrides if needed */
+.recharts-wrapper .recharts-yAxis .recharts-text.recharts-cartesian-axis-tick-value {
+    font-size: 0.85em; /* Adjust Y-axis (price) tick label font size */
+}
+
+.recharts-wrapper .recharts-xAxis .recharts-text.recharts-cartesian-axis-tick-value {
+    font-size: 0.85em; /* Adjust X-axis (volume) tick label font size */
+}
+
+.recharts-tooltip-wrapper {
+    font-size: 0.9em;
+    border-radius: 3px !important; /* Recharts tooltips can be stubborn */
+    border: 1px solid #ccc !important;
+    background-color: rgba(255, 255, 255, 0.9) !important;
+}
+
+.vp-summary {
+    margin-top: 10px;
+    padding: 10px;
+    background-color: #f9f9f9;
+    border-radius: 4px;
+    border: 1px solid #eee;
+    font-size: 0.9em;
+}
+
+.vp-summary p {
+    margin: 5px 0;
+    color: #333;
+}
+
+/* Styling for ReferenceLine labels (if directly supported, often tricky) */
+/* Recharts ReferenceLine label prop can take a component or a value */
+.recharts-reference-line .recharts-label {
+    font-size: 0.8em;
+    fill: #555;
+}
+
+/* Ensure DatePicker input is not overly wide */
+.react-datepicker-wrapper input[type="text"] {
+    width: auto; /* Or a specific width like 150px */
+}

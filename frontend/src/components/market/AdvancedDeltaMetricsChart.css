@@ -1,0 +1,109 @@
+.advanced-delta-metrics-chart-container {
+    border: 1px solid #ccc;
+    padding: 15px;
+    border-radius: 5px;
+    background-color: #fdfdfd;
+    font-family: Arial, sans-serif;
+    margin-bottom: 20px;
+}
+
+.advanced-delta-metrics-chart-container h4,
+.advanced-delta-metrics-chart-container h5 {
+    text-align: center;
+    margin-top: 0;
+    margin-bottom: 15px;
+    color: #333;
+}
+
+.advanced-delta-metrics-chart-container h5 {
+    font-size: 1.1em;
+    margin-top: 20px; /* Space above sub-chart titles */
+}
+
+.adv-delta-controls {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px; /* Smaller gap for more controls */
+    margin-bottom: 20px;
+    padding: 10px;
+    background-color: #f0f0f0;
+    border-radius: 4px;
+    align-items: center;
+}
+
+.adv-delta-controls label {
+    font-size: 0.85em; /* Smaller font for labels */
+    color: #555;
+    margin-right: 3px;
+    display: flex;
+    align-items: center;
+    gap: 3px;
+}
+
+.adv-delta-controls select,
+.adv-delta-controls input[type="number"],
+.adv-delta-controls .react-datepicker-wrapper input[type="text"], /* DatePicker input */
+.adv-delta-controls button {
+    padding: 5px 8px; /* Slightly smaller padding */
+    font-size: 0.85em;
+    border: 1px solid #ddd;
+    border-radius: 3px;
+}
+
+.adv-delta-controls select {
+    min-width: 70px;
+}
+
+.adv-delta-controls input[type="number"] {
+    width: 50px; /* Compact number inputs */
+}
+
+.adv-delta-controls button {
+    background-color: #007bff;
+    color: white;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+.adv-delta-controls button:hover {
+    background-color: #0056b3;
+}
+
+.adv-delta-controls button:disabled {
+    background-color: #ccc;
+    cursor: not-allowed;
+}
+
+.error-message { /* Shared error message styling */
+    color: #D8000C;
+    background-color: #FFD2D2;
+    border: 1px solid #D8000C;
+    padding: 10px;
+    border-radius: 4px;
+    margin: 10px 0;
+    text-align: center;
+}
+
+/* Recharts specific overrides if needed */
+.recharts-wrapper .recharts-yAxis .recharts-text.recharts-cartesian-axis-tick-value,
+.recharts-wrapper .recharts-xAxis .recharts-text.recharts-cartesian-axis-tick-value {
+    font-size: 0.8em; /* Smaller tick labels for compact charts */
+}
+
+.recharts-tooltip-wrapper {
+    font-size: 0.85em;
+    border-radius: 3px !important;
+    border: 1px solid #ccc !important;
+    background-color: rgba(255, 255, 255, 0.95) !important;
+}
+
+.recharts-legend-wrapper {
+    font-size: 0.9em;
+    margin-top: 10px !important;
+}
+
+/* Ensure DatePicker input is not overly wide */
+.adv-delta-controls .react-datepicker-wrapper input[type="text"] {
+    width: auto; /* Or a specific width like 120px */
+    max-width: 150px;
+}

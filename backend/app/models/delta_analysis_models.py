@@ -1,60 +1,95 @@
-from pydantic import BaseModel, Field
-from typing import List, Optional # Added Optional
+"""
+Pydantic models for Delta Analysis related API responses.
+
+This includes models for Cumulative Volume Delta (CVD),
+Average True Range (ATR - primarily for internal use/calculations),
+Delta Volume Pressure Ratio (DVPR), and Delta Moving Average Rate of Change (DMRV).
+"""
 from datetime import datetime
+from typing import List, Optional
+
+from pydantic import BaseModel, Field
+
 
 class CVDDataPoint(BaseModel):
-    timestamp: datetime # Corresponds to the end/timestamp of the bar
-    cvd_value: float
+    """
+    Represents a single data point in a Cumulative Volume Delta series.
+    """
+    timestamp: datetime = Field(..., description="Timestamp for this CVD value (typically end of bar).")
+    cvd_value: float = Field(..., description="Cumulative Volume Delta value.")
 
     class Config:
         from_attributes = True
 
-# Models for Advanced Delta Metrics
-
-class ATRDataPoint(BaseModel): # For internal use or if ATR is exposed directly later
-    timestamp: datetime
-    atr_value: float
-
-    class Config:
-        from_attributes = True
-
-class DVPRDataPoint(BaseModel): # Delta Volume Pressure Ratio
-    timestamp: datetime # Bar timestamp
-    dvpr_value: Optional[float] = Field(None, description="Delta / (Volume * ATR); can be None if ATR or Volume is zero or not calculable")
-    bar_delta: float
-    bar_volume: float
-    bar_atr: Optional[float] = Field(None, description="ATR for that bar's period; can be None if not calculable")
-
-    class Config:
-        from_attributes = True
-
-class DMRVDataPoint(BaseModel): # Delta Moving Average Rate of Change (or Ratio/Velocity)
-    timestamp: datetime # Bar timestamp
-    short_delta_ma: Optional[float] = Field(None, description="Short-term moving average of delta")
-    long_delta_ma: Optional[float] = Field(None, description="Long-term moving average of delta")
-    dmrv_value: Optional[float] = Field(None, description="Difference: short_delta_ma - long_delta_ma")
-    # Or, if velocity (rate of change of dmrv_value):
-    # dmrv_value_diff: Optional[float] = Field(None, description="Change from previous dmrv_value")
-
-    class Config:
-        from_attributes = True
-
-class AdvancedDeltaMetricsResponse(BaseModel):
-    exchange: str
-    symbol: str
-    timeframe: str
-    dvpr_points: List[DVPRDataPoint]
-    dmrv_points: List[DMRVDataPoint]
-
-    class Config:
-        from_attributes = True
 
 class CVDChartDataResponse(BaseModel):
-    exchange: str
-    symbol: str
-    timeframe: str # Timeframe of the underlying bars used for delta calculation
-    reset_condition: str # e.g., "none", "daily"
-    cvd_points: List[CVDDataPoint]
+    """
+    API response model for Cumulative Volume Delta (CVD) chart data.
+    """
+    exchange: str = Field(..., description="Exchange name.")
+    symbol: str = Field(..., description="Trading symbol.")
+    timeframe: str = Field(..., description="Timeframe of the underlying bars used for delta calculation (e.g., '1m', '5m').")
+    reset_condition: str = Field(..., description="Condition under which CVD was reset (e.g., 'none', 'daily').")
+    cvd_points: List[CVDDataPoint] = Field(..., description="List of CVD data points.")
+
+    class Config:
+        from_attributes = True
+
+
+# --- Models for Advanced Delta Metrics ---
+
+class ATRDataPoint(BaseModel):
+    """
+    Represents a single Average True Range (ATR) data point.
+    Mainly for internal calculations but defined for clarity.
+    """
+    timestamp: datetime = Field(..., description="Timestamp for this ATR value.")
+    atr_value: float = Field(..., description="Calculated ATR value.")
+
+    class Config:
+        from_attributes = True
+
+
+class DVPRDataPoint(BaseModel):
+    """
+    Represents a single data point for Delta Volume Pressure Ratio (DVPR).
+    DVPR = Bar Delta / (Bar Volume * Bar ATR)
+    """
+    timestamp: datetime = Field(..., description="Timestamp of the bar.")
+    dvpr_value: Optional[float] = Field(None, description="Calculated DVPR value. Can be null if ATR or Volume is zero/unavailable.")
+    bar_delta: float = Field(..., description="Delta of the bar (Ask Volume - Bid Volume).")
+    bar_volume: float = Field(..., description="Total volume of the bar.")
+    bar_atr: Optional[float] = Field(None, description="Average True Range (ATR) for the bar's period. Can be null if not calculable.")
+
+    class Config:
+        from_attributes = True
+
+
+class DMRVDataPoint(BaseModel):
+    """
+    Represents a single data point for Delta Moving Average Rate of Change/Value (DMRV).
+    DMRV = Short-term MA of Delta - Long-term MA of Delta.
+    """
+    timestamp: datetime = Field(..., description="Timestamp of the bar.")
+    short_delta_ma: Optional[float] = Field(None, description="Short-term moving average of bar deltas.")
+    long_delta_ma: Optional[float] = Field(None, description="Long-term moving average of bar deltas.")
+    dmrv_value: Optional[float] = Field(None, description="Calculated DMRV value (Short MA - Long MA).")
+    # Optional: Add dmrv_value_diff for rate of change if needed later.
+    # dmrv_value_diff: Optional[float] = Field(None, description="Change from the previous DMRV value.")
+
+    class Config:
+        from_attributes = True
+
+
+class AdvancedDeltaMetricsResponse(BaseModel):
+    """
+    API response model for advanced delta metrics, including DVPR and DMRV.
+    """
+    exchange: str = Field(..., description="Exchange name.")
+    symbol: str = Field(..., description="Trading symbol.")
+    timeframe: str = Field(..., description="Timeframe of the bars used for calculations.")
+    dvpr_points: List[DVPRDataPoint] = Field(..., description="List of DVPR data points.")
+    dmrv_points: List[DMRVDataPoint] = Field(..., description="List of DMRV data points.")
 
     class Config:
         from_attributes = True

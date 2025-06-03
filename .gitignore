@@ -1,3 +1,21 @@
+# General
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+desktop.ini
+
+# IDEs and editors
+.idea/
+.vscode/
+*.project
+*.pydevproject
+.sublime-workspace
+.directory # Kate Text Editor
+
 # Python
 __pycache__/
 *.py[cod]
@@ -16,27 +34,38 @@ parts/
 sdist/
 var/
 wheels/
-share/python-wheels/
 *.egg-info/
 .installed.cfg
 *.egg
 MANIFEST
-*.manifest
-*.spec
-pip-selfcheck.json
-*.cover
-*.coverage
-*.cache
-*.hypothesis
+pip-log.txt
+pip-delete-this-directory.txt
+htmlcov/
 .tox/
 .nox/
+.coverage
 .coverage.*
 .cache
 nosetests.xml
 coverage.xml
-*.log
-*.pyc
+*.cover
+.hypothesis/
+.pytest_cache/
+*.mo
+*.pot
+instance/
+.webassets-cache
+.scrapy
+docs/_build/ # Sphinx documentation
+target/ # PyBuilder
+.ipynb_checkpoints # Jupyter Notebook
+profile_default/ # IPython
+ipython_config.py
+
+# Environments
 .env
+.env.*
+!.env.example
 .venv
 env/
 venv/
@@ -44,32 +73,71 @@ ENV/
 env.bak/
 venv.bak/
 
-# Node.js
+# Node.js / Frontend (general, frontend/ also has its own)
 node_modules/
-npm-debug.log
-yarn-error.log
-yarn-debug.log
-.npm/
-.node_repl_history
-*.tgz
-.yarn-integrity
-.env
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+# package-lock.json # Uncomment if not using or if both are possible
+# yarn.lock # Uncomment if not using or if both are possible
+/frontend/build/ # Explicitly ignore frontend build output from root
+frontend/node_modules/ # Ensure frontend node_modules is ignored from root
+
+# Docker
+docker-compose.override.yml
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Optional: Operating System specific files
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+# Linux
+*~
+# macOS
 .DS_Store
+.AppleDouble
+.LSOverride
 
-# TimescaleDB
-*.dump
-*.sql
+# Optional: Other build outputs or temporary files
 *.bak
+*.tmp
+*.swp
+*.swo
+temp/
+tmp/
+output/
 
-# IDE
-.idea/
-.vscode/
-*.suo
-*.ntvs*
-*.njsproj
-*.sln
-*.sw?
+# Local settings files
+# local_settings.py # Example for Python/Django
+
+# Test outputs
+/coverage/
+/reports/
+junit.xml
+test-results/
+
+#Terraform files
+.terraform/
+.terraform.lock.hcl
+*.tfstate
+*.tfstate.*
+crash.log
+crash.*.log
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+.terraformrc
+terraform.rc
+terraform.tfvars
+terraform.tfvars.json
+*.tfvars
+*.tfvars.json
+# End of .gitignore

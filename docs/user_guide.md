@@ -38,71 +38,80 @@ This guide provides instructions on how to use the Crypto Dashboard.
 ## 4. Core Charts and Tools
 
 *   **Order Book Depth Chart:**
-    *   **Reading Depth:** Visualizes cumulative bid (green) and ask (red) volume at different price levels. The Y-axis shows price, X-axis shows cumulative volume.
-    *   **Imbalance Stats:** Displays calculated bid/ask volume and imbalance ratios at configured depth levels (e.g., top 5, 10, 20 levels). A ratio > 50% indicates heavier bid-side volume at that depth.
-    *   **OBDG Stats:** Shows Order Book Depth Gradient metrics, comparing volume distribution in "near market" vs. "far market" depth segments. Ratios indicate relative liquidity concentration.
-    *   *Polling:* Updates every few seconds.
+    *   **Reading Depth:** Visualizes cumulative bid (typically green, growing from center to left) and ask (typically red, growing from center to right) volume. The Y-axis shows price levels, and the X-axis shows cumulative volume from the best bid/ask outwards. The chart helps identify areas of high liquidity (support/resistance).
+    *   **Imbalance Stats:** Below the chart, this section shows the ratio of bid volume to total volume (bid + ask) at specific depths (e.g., top 5, 10, 20 levels from the Best Bid Offer - BBO). A ratio > 0.5 (or 50%) indicates more volume on the bid side at that depth; < 0.5 indicates more on the ask side.
+    *   **OBDG Stats (Order Book Depth Gradient):** Compares volume in "near market" levels (e.g., first 5 levels) to "far market" levels (e.g., levels 6-20).
+        *   `Bid Ratio (Near/Far)`: High ratio means more bid volume closer to market.
+        *   `Ask Ratio (Near/Far)`: High ratio means more ask volume closer to market.
+        *   `Overall Gradient Strength`: High ratio means more total volume (bids + asks) is concentrated near the market.
+    *   *Polling:* The data for this chart updates automatically every few seconds.
 
 *   **Time & Sales (Tape):**
-    *   **Trade Log:** A chronological list of recent trades. Columns: Time, Price, Volume, Side (Buy/Sell).
+    *   **Trade Log:** A chronological list of recent market trades. Columns typically include:
+        *   `Time`: Timestamp of the trade.
+        *   `Price`: Execution price.
+        *   `Volume`: Quantity of the asset traded.
+        *   `Side`: Indicates if the aggressor was a buyer (hitting an ask, usually green) or a seller (hitting a bid, usually red).
     *   **Filtering:**
-        *   `Limit`: Control how many recent trades are displayed.
-        *   `Min Volume`: Filter out trades smaller than this volume.
-        *   `Large Vol Min`: Set a threshold to highlight "large" trades.
-    *   **Large Trade Highlighting:** Trades exceeding the "Large Vol Min" threshold are visually emphasized (e.g., bold text).
-    *   *Polling:* Updates every few seconds.
+        *   `Limit`: Adjusts the number of recent trades shown in the log.
+        *   `Min Volume`: Filters the log to only show trades with volume greater than or equal to this value. Useful for spotting larger orders.
+        *   `Large Vol Min`: Sets a threshold. Trades with volume meeting or exceeding this value will be visually highlighted in the log (e.g., made bold).
+    *   *Polling:* Updates automatically every few seconds to show the latest trades.
 
 *   **Footprint Chart:**
-    *   **Reading Footprints:** Each bar (candle) is broken down by price level. At each price, it shows `Bid Volume x Ask Volume` (volume traded by sellers hitting bids vs. volume traded by buyers hitting asks).
+    *   **Reading Footprints:** Each candlestick (bar) is expanded to show trading volume at each price level within that bar. Inside each price level cell, you'll see `Bid Volume x Ask Volume`.
+        *   `Bid Volume`: Volume resulting from sellers hitting bids (seller aggression).
+        *   `Ask Volume`: Volume resulting from buyers hitting asks (buyer aggression).
     *   **Controls:**
-        *   `Timeframe`: Select the bar interval (e.g., 5m, 15m). Synchronized with global timeframe.
-        *   `Start/End Date/Time`: Select the period for which to load footprint data.
-        *   "Refresh Data" button.
-    *   **Visual Cues:**
-        *   **Delta per Price:** Text below "Bid x Ask" showing `(Ask Vol - Bid Vol)`, colored green for positive, red for negative.
-        *   **Total Bar Delta:** Displayed at the bottom of each bar, colored by its sign.
-        *   **Point of Control (POC):** Price level with the highest total volume within a bar, highlighted (e.g., gold border/fill).
-        *   **Significant Imbalances:** Cells with strong bid/ask imbalance (e.g., 3x ratio) are highlighted with distinct backgrounds (e.g., strong green for ask imbalance, strong red for bid imbalance).
-        *   **Unfinished Auctions:** Highlights at the bar's high/low if specific conditions (close proximity, strong counter-volume) suggest the auction might not have completed.
-    *   **ML Predictions (Interactive):** See section 5.
+        *   `Timeframe`: Select the bar interval (e.g., 1m, 5m, 1h). This is synchronized with the Global Timeframe selector.
+        *   `Start/End Date/Time`: Use the date pickers to select the historical period for which to load footprint data.
+        *   "Refresh Data": Manually re-fetches data for the selected parameters.
+    *   **Visual Cues within each bar:**
+        *   **Delta per Price:** Below the "Bid x Ask" text in each cell, a value in parentheses shows the delta for that price level (`Ask Volume - Bid Volume`). Positive delta (green text) means more aggressive buying; negative delta (red text) means more aggressive selling.
+        *   **Total Bar Delta (Δ):** Displayed at the bottom (or top) of each bar, representing the sum of all price level deltas within that bar. Colored green for positive net delta, red for negative.
+        *   **Point of Control (POC):** The price level within each bar that had the highest total volume. This cell is typically highlighted with a distinct border or background (e.g., gold).
+        *   **Significant Imbalances:** Price level cells where aggressive buying significantly outweighs selling (e.g., Ask Volume is 3x Bid Volume) are highlighted with a strong green background. Conversely, cells with significant aggressive selling are highlighted with a strong red background.
+        *   **Unfinished Auctions:** Cells at the extreme high or low of a bar might be highlighted (e.g., light orange for high, light blue for low) if conditions suggest the auction at that extreme was "unfinished" (e.g., bar closed near the high with strong ask imbalance at the high, indicating potential for further upward movement if buyers continue).
+    *   **ML Predictions (Interactive):** See section 5 for details on how to trigger and interpret ML predictions by clicking on bars or price cells.
 
 *   **Volume Profile Chart:**
-    *   **Reading Profile:** Displays total volume traded at each price level over a specified period, shown as horizontal bars. Y-axis is price, X-axis is total volume.
+    *   **Reading Profile:** Visualizes total volume traded at each price level over a specified period, displayed as horizontal bars. The Y-axis represents price, and the X-axis represents the total volume traded at that price.
     *   **Controls:**
         *   `Profile Type`:
-            *   `DAILY`, `WEEKLY`, `MONTHLY`: Uses the "Date (UTC)" selector to pick a reference date for the period.
-            *   `RANGE`: Uses "Start" and "End" datetime pickers to define a custom range.
-        *   `Tick Size (Opt.)`: Group prices by this increment for smoother profiles.
-        *   "Refresh Data" button.
+            *   `DAILY`, `WEEKLY`, `MONTHLY`: Generates a profile for the selected day, week, or month. Use the "Date (UTC)" picker to select the reference date for the period.
+            *   `RANGE`: Generates a profile for a custom date/time range. Use the "Start" and "End" datetime pickers.
+        *   `Tick Size (Opt.)`: Optionally group prices by this increment. For example, if tick size is 0.5, prices like 100.1, 100.3, 100.4 would all be grouped into a level at 100.5 (if rounding to nearest tick) or 100.0. This can make profiles smoother for instruments with very small price steps.
+        *   "Refresh Data": Manually re-fetches data.
     *   **Visual Cues:**
-        *   **Point of Control (POC):** Price level with the highest volume in the profile, highlighted (e.g., gold bar).
-        *   **Value Area (VA):** Range of prices where a significant percentage (e.g., 70%) of the total volume was traded, highlighted with a different bar color (e.g., green).
-        *   Reference lines and textual summary also indicate POC and VA range.
+        *   **Point of Control (POC):** The price level with the highest traded volume within the selected period. This bar is typically highlighted (e.g., in gold/yellow).
+        *   **Value Area (VA):** The range of prices where a significant percentage (typically 70%) of the total volume for the period was traded. Bars within the VA are usually colored differently (e.g., green) than those outside (e.g., grey).
+        *   The chart also has reference lines marking the POC, VA High, and VA Low. A textual summary of these values is usually provided below the chart.
 
 *   **CVD Chart (Cumulative Volume Delta):**
-    *   **Interpreting CVD:** Shows the cumulative sum of bar deltas (Ask Volume - Bid Volume) over time as a line chart. Rising CVD indicates net buying pressure; falling CVD indicates net selling pressure.
+    *   **Interpreting CVD:** A line chart that shows the cumulative sum of bar deltas (Ask Volume - Bid Volume) over time. A rising CVD line indicates sustained net buying pressure, while a falling CVD line indicates sustained net selling pressure. Divergences between price action and CVD can be significant.
     *   **Controls:**
-        *   `Timeframe (TF)`: Timeframe of the underlying bars used for delta calculation. Synchronized with global timeframe.
+        *   `Timeframe (TF)`: Selects the timeframe of the underlying bars used to calculate the delta for each CVD point. This is synchronized with the Global Timeframe selector.
         *   `Reset`:
-            *   `none`: CVD accumulates continuously over the selected date range.
-            *   `daily`: CVD resets to 0 at the start of each UTC day.
-        *   `Start/End Date/Time`: Select the period for CVD calculation.
-        *   "Refresh Data" button.
+            *   `none`: CVD accumulates continuously over the entire selected date range.
+            *   `daily`: CVD accumulation resets to 0 at the start of each new UTC day.
+        *   `Start/End Date/Time`: Define the period for which to calculate and display CVD.
+        *   "Refresh Data": Manually re-fetches data.
     *   **Divergence Drawing Tools:**
-        *   "Draw Divergence" / "Cancel Drawing": Toggles drawing mode.
-        *   When active, click two points on the CVD line to draw a line.
-        *   "Clear Last Line" / "Clear All Lines": Manage drawn lines.
+        *   "Draw Divergence" / "Cancel Drawing": A toggle button to enter or exit drawing mode.
+        *   When drawing mode is active, click on two points on the CVD line to draw a straight line between them. This can be used to mark potential bullish or bearish divergences.
+        *   "Clear Last Line": Removes the most recently drawn line.
+        *   "Clear All Lines": Removes all user-drawn lines from the chart.
 
 *   **Advanced Delta Metrics Chart (DVPR & DMRV):**
-    *   **DVPR (Delta Volume Pressure Ratio):** `Bar Delta / (Bar Volume * ATR)`. Shows delta normalized by volume and volatility. Extreme values might indicate exhaustion or strong pressure.
-    *   **DMRV (Delta Moving Average Rate of Change/Value):** `Short-term MA of Delta - Long-term MA of Delta`. Shows changes in delta momentum.
+    *   **DVPR (Delta Volume Pressure Ratio):** Calculated as `Bar Delta / (Bar Volume * ATR)`. This metric normalizes delta by both volume and volatility (ATR). High positive values might indicate strong buying pressure that's significant relative to volume and volatility; high negative values indicate strong selling pressure. Values near zero might indicate balance or low conviction.
+    *   **DMRV (Delta Moving Average Rate of Change/Value):** Calculated as `Short-term MA of Delta - Long-term MA of Delta`. This shows the momentum of delta. A positive DMRV indicates short-term delta momentum is stronger than long-term, suggesting increasing buying pressure. A negative DMRV suggests increasing selling pressure. Crossovers of the short and long MAs (where DMRV crosses zero) can also be points of interest.
     *   **Controls:**
-        *   `Timeframe (TF)`: Timeframe of underlying bars. Synchronized with global timeframe.
-        *   `Start/End Date/Time`: Select the data range.
-        *   `ATR P`: Period for ATR calculation (used in DVPR).
-        *   `DMRV Short/Long`: Periods for the short-term and long-term moving averages of delta.
-        *   "Refresh Data" button.
-    *   **Charts:** DVPR and DMRV are displayed as separate line charts. The DMRV chart also shows the underlying short and long delta MAs.
+        *   `Timeframe (TF)`: Selects the timeframe of the underlying bars. Synchronized with the Global Timeframe selector.
+        *   `Start/End Date/Time`: Define the data range for calculation and display.
+        *   `ATR P`: Sets the period for the Average True Range (ATR) calculation, which is used in DVPR.
+        *   `DMRV Short/Long`: Sets the periods for the short-term and long-term Simple Moving Averages (SMAs) of delta used in DMRV calculation.
+        *   "Refresh Data": Manually re-fetches data.
+    *   **Charts:** DVPR and DMRV are displayed as separate line charts. The DMRV chart also plots the short-term and long-term delta MAs for context.
 
 ## 5. ML Predictive Overlays (on Footprint Chart)
 *   **Triggering Predictions:**

@@ -1,29 +1,55 @@
-from typing import List, Optional
+"""
+Pydantic models for representing the health status of data feeds and exchange clients.
+
+These models are used by the status API endpoint to structure its response,
+providing clients with an overview of the data ingestion pipeline's operational status.
+"""
 from datetime import datetime
-from pydantic import BaseModel
+from typing import List, Optional
+
+from pydantic import BaseModel, Field, ConfigDict
+
 
 class StreamStatus(BaseModel):
-    stream_type: str             # e.g., "trade", "depth", "ticker"
-    status: str                  # e.g., "connected", "connecting", "disconnected", "error", "stale", "stopped", "initializing"
-    last_message_at: Optional[datetime] = None
-    error_message: Optional[str] = None
+    """
+    Represents the status of an individual data stream (e.g., trades for a specific symbol).
+    """
+    stream_type: str = Field(..., description="Type of the data stream (e.g., 'trade', 'depth', 'ticker').")
+    status: str = Field(..., description="Current status of the stream (e.g., 'connected', 'connecting', 'disconnected', 'error', 'stale', 'stopped', 'initializing').")
+    last_message_at: Optional[datetime] = Field(None, description="Timestamp of the last message received on this stream (UTC).")
+    error_message: Optional[str] = Field(None, description="Any error message associated with this stream's current status.")
+
+    model_config = ConfigDict(from_attributes=True)
+
 
 class SymbolFeedStatus(BaseModel):
-    symbol: str
-    overall_symbol_status: str   # Overall status for this symbol's feeds (e.g. "connected", "degraded", "error")
-    streams: List[StreamStatus]
-    # error field was in the example, but stream-specific errors are in StreamStatus.
-    # A symbol-level error could be for configuration issues, etc.
-    # For now, let's rely on stream_errors and overall_symbol_status.
-    # error: Optional[str] = None
+    """
+    Aggregated status for all data streams related to a specific symbol on an exchange.
+    """
+    symbol: str = Field(..., description="Trading symbol (e.g., 'btcusdt').")
+    overall_symbol_status: str = Field(..., description="Overall health status for this symbol's feeds (e.g., 'connected', 'degraded', 'error', 'stopped').")
+    streams: List[StreamStatus] = Field(..., description="List of statuses for individual streams (trade, depth, ticker) for this symbol.")
+    # error: Optional[str] = Field(None, description="Symbol-level error message, if any (e.g., configuration issues).") # Currently unused
 
-class ExchangeClientStatus(BaseModel): # Renamed from ExchangeFeedStatus for clarity (it's client status)
-    exchange_name: str
-    client_connection_status: str # Overall status of the client itself (e.g. "connected", "error", "stopped")
-    client_error_message: Optional[str] = None
-    symbols: List[SymbolFeedStatus]
+    model_config = ConfigDict(from_attributes=True)
 
-class DataFeedHealthResponse(BaseModel): # Top-level response model
-    exchanges: List[ExchangeClientStatus]
 
-# Ensure __init__.py exists for the models directory (already created)
+class ExchangeClientStatus(BaseModel):
+    """
+    Overall status of a connection to a specific exchange, including the status of all subscribed symbols.
+    """
+    exchange_name: str = Field(..., description="Name of the exchange (e.g., 'binance').")
+    client_connection_status: str = Field(..., description="Overall connection status of the client for this exchange (e.g., 'connected', 'partially_connected', 'disconnected', 'error', 'stopped').")
+    client_error_message: Optional[str] = Field(None, description="Any client-level error message for this exchange connection.")
+    symbols: List[SymbolFeedStatus] = Field(..., description="Status of feeds for each subscribed symbol on this exchange.")
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class DataFeedHealthResponse(BaseModel):
+    """
+    Top-level API response model for data feed health status across all configured exchanges.
+    """
+    exchanges: List[ExchangeClientStatus] = Field(..., description="List of statuses for each connected exchange client.")
+
+    model_config = ConfigDict(from_attributes=True)

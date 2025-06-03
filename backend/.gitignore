@@ -1,0 +1,11 @@
+# Backend specific ignores (most Python related ignores are in the root .gitignore)
+
+# Example: If you had specific local config files for backend dev not covered by .env
+# local_backend_config.ini
+
+# Example: SQLite databases if used for local testing (TimescaleDB is primary)
+# *.sqlite3
+# db.sqlite3
+
+# Example: Local log files specific to backend development
+# backend_dev.log

@@ -25,11 +25,12 @@ This document provides instructions for setting up the backend of the Crypto Das
     *   The backend uses a `.env` file for configuration.
     *   Create a `.env` file in the `backend` directory by copying from a template if provided (e.g., `.env.example`) or creating it manually.
     *   Key variable: `DATABASE_URL`. This is the connection string for your TimescaleDB instance.
-        Example: `DATABASE_URL=postgresql://your_db_user:your_db_password@your_db_host:your_db_port/your_db_name`
-        (Replace placeholders with your actual database credentials and details).
-    *   Other potential variables: API keys for exchanges (if used beyond public data), ML model paths (though currently simulated).
+        Default for local development (if not using Docker Compose's `db` service): `DATABASE_URL=postgresql://user:password@localhost:5432/crypto_dashboard`
+        When using `docker-compose.yml` provided, this will be set to `postgresql://user:password@db:5432/crypto_dashboard` (or your chosen credentials).
+    *   **ML Model Paths:** As defined in `backend/app/core/config.py`, paths like `MOMENTUM_SUSTAINABILITY_MODEL_PATH` point to where model files are expected. For simulation, these files don't need to exist. For actual models, ensure these paths are correct relative to the backend's root directory or use absolute paths. Example default: `MOMENTUM_SUSTAINABILITY_MODEL_PATH=backend/app/ml_models/momentum_model.pkl`.
+    *   **Application Settings:** `APP_HOST`, `APP_PORT`, `LOG_LEVEL` can also be set in the `.env` file to override defaults in `config.py`.
 *   **Database Initialization (Schema Creation):**
-    *   The `backend/app/db/init_db.py` script is provided to create database tables and TimescaleDB hypertables based on SQLAlchemy models.
+    *   The `backend/app/db/init_db.py` script creates database tables and TimescaleDB hypertables based on SQLAlchemy models defined in `backend/app/db/models.py`.
     *   Ensure your `DATABASE_URL` in `.env` is correctly configured and the database is accessible.
     *   Run from the `backend` directory using Poetry:
         ```bash

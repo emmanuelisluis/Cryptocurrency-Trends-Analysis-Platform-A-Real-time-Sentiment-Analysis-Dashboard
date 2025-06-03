@@ -1,18 +1,43 @@
 import logging
 from sqlalchemy.orm import Session
 from datetime import datetime, timedelta
-from typing import List, Dict
+"""
+Service layer for generating Footprint chart data.
+
+This service fetches raw trade data, aggregates it into time-based bars,
+and then for each bar, further aggregates volume by price level,
+distinguishing between bid-aggressor and ask-aggressor volumes.
+"""
+import logging
 from collections import defaultdict
-import pandas as pd # This import will fail if pandas is not installed
+from datetime import datetime, timedelta
+from typing import Dict, List
+
+import pandas as pd # Assumed to be installed
+from sqlalchemy.orm import Session
+from sqlalchemy.exc import SQLAlchemyError
+from fastapi import HTTPException # For raising errors that can be handled by API layer
 
 from backend.app.db.models import TradeDB
-from backend.app.models.footprint_models import FootprintBar, FootprintPriceLevel, FootprintChartDataResponse
-from backend.app.utils.time_utils import parse_timeframe_to_timedelta, map_timeframe_to_pandas_freq
-# from backend.app.core.config import settings # Uncomment if settings are needed
+from backend.app.models.footprint_models import (
+    FootprintBar,
+    FootprintPriceLevel,
+    FootprintChartDataResponse,
+)
+from backend.app.utils.time_utils import (
+    map_timeframe_to_pandas_freq,
+    parse_timeframe_to_timedelta,
+)
+# from backend.app.core.config import settings # Uncomment if specific settings are needed
 
 logger = logging.getLogger(__name__)
 
+
 class FootprintService:
+    """
+    Service class for generating footprint chart data.
+    """
+
     def get_footprint_data(
         self,
         db: Session,
@@ -22,124 +47,151 @@ class FootprintService:
         start_dt: datetime,
         end_dt: datetime
     ) -> FootprintChartDataResponse:
+        """
+        Generates footprint chart data for a given market, timeframe, and date range.
 
-        # Validate and parse timeframe string
-        try:
-            timeframe_delta = parse_timeframe_to_timedelta(timeframe_str)
-            pandas_timeframe = map_timeframe_to_pandas_freq(timeframe_str)
-        except ValueError as e:
-            logger.error(f"Invalid timeframe processing: {e}")
-            raise # Re-raise to be caught by endpoint and returned as HTTP 400
+        Args:
+            db: SQLAlchemy database session.
+            exchange: Exchange name (e.g., "binance").
+            symbol: Trading symbol (e.g., "btcusdt").
+            timeframe_str: Timeframe string (e.g., "1m", "5m", "1H").
+            start_dt: Start datetime (UTC) for data fetching.
+            end_dt: End datetime (UTC) for data fetching.
+
+        Returns:
+            FootprintChartDataResponse containing the generated footprint bars.
+
+        Raises:
+            ValueError: If the timeframe string is invalid.
+            HTTPException: If there's a database error during trade fetching.
+        """
+
+        logger.info(
+            f"Generating footprint data for {exchange.lower()}/{symbol.lower()} | "
+            f"Timeframe: {timeframe_str} | Range: {start_dt} to {end_dt}"
+        )
+
+        # Validate and parse timeframe string (raises ValueError if invalid)
+        timeframe_delta = parse_timeframe_to_timedelta(timeframe_str)
+        pandas_timeframe = map_timeframe_to_pandas_freq(timeframe_str)
+        logger.debug(f"Parsed timeframe: delta={timeframe_delta}, pandas_freq='{pandas_timeframe}'")
 
         # 1. Fetch trades from DB
-        logger.info(f"Fetching trades for {exchange}/{symbol} from {start_dt} to {end_dt}")
+        # Ensure aggressor_side is not None as it's crucial for footprint calculation.
         query = (
             db.query(TradeDB.timestamp, TradeDB.price, TradeDB.volume, TradeDB.aggressor_side)
             .filter(
                 TradeDB.exchange == exchange.lower(),
                 TradeDB.symbol == symbol.lower(),
                 TradeDB.timestamp >= start_dt,
-                TradeDB.timestamp < end_dt, # Use < end_dt for consistency with pandas resampling
-                TradeDB.aggressor_side.isnot(None) # Crucial for footprint
+                TradeDB.timestamp < end_dt, # Standard practice: end_dt is exclusive
+                TradeDB.aggressor_side.isnot(None)
             )
-            .order_by(TradeDB.timestamp.asc())
+            .order_by(TradeDB.timestamp.asc()) # Order by time for correct resampling
         )
 
         try:
             trades_df = pd.read_sql(query.statement, db.bind)
-        except Exception as e: # Catch pandas/DB read errors
-            logger.error(f"Error reading trades into DataFrame: {e}", exc_info=True)
-            raise HTTPException(status_code=500, detail="Database error while fetching trades.") # Example, specific error handling might be better
+            logger.debug(f"Fetched {len(trades_df)} trades from database.")
+        except SQLAlchemyError as e:
+            logger.error(f"Database error fetching trades for footprint: {e}", exc_info=True)
+            # Propagate as an HTTPException to be handled by the API layer
+            raise HTTPException(status_code=503, detail=f"Database error while fetching trades: {e}")
+        except Exception as e: # Catch other pandas/DB read errors
+            logger.error(f"Unexpected error reading trades into DataFrame: {e}", exc_info=True)
+            raise HTTPException(status_code=500, detail=f"Unexpected error reading trades: {e}")
+
 
         if trades_df.empty:
-            logger.info("No trades found for the given criteria.")
+            logger.info("No trades found for the given criteria to generate footprints.")
             return FootprintChartDataResponse(exchange=exchange, symbol=symbol, timeframe=timeframe_str, bars=[])
 
-        # Ensure timestamp is datetime and set as index
-        trades_df['timestamp'] = pd.to_datetime(trades_df['timestamp'], utc=True) # Ensure UTC
+        # Ensure timestamp is pandas datetime and set as index (should be UTC from DB)
+        trades_df['timestamp'] = pd.to_datetime(trades_df['timestamp'], utc=True)
         trades_df.set_index('timestamp', inplace=True)
 
-        # 2. Resample trades into bars (OHLC) based on price
-        #    'rule' argument for resample should be like '1T' (1 min), '1H' (1 hour)
-        logger.info(f"Resampling trades to {pandas_timeframe} timeframe...")
-        ohlc_df = trades_df['price'].resample(pandas_timeframe).ohlc()
+        # 2. Resample trades into bars to get OHLC data per interval
+        # The 'rule' for resample should be a Pandas frequency string (e.g., '1T', '5T', '1H').
+        logger.info(f"Resampling trades to '{pandas_timeframe}' timeframe for OHLC...")
+        ohlc_df = trades_df['price'].resample(rule=pandas_timeframe).ohlc()
+        # Drop rows where all OHLC values are NaN (bars with no trades)
+        ohlc_df.dropna(how='all', inplace=True)
 
         if ohlc_df.empty:
             logger.info("OHLC data is empty after resampling (no trades in any interval).")
             return FootprintChartDataResponse(exchange=exchange, symbol=symbol, timeframe=timeframe_str, bars=[])
 
         footprint_bars: List[FootprintBar] = []
+        logger.info(f"Aggregating trades into {len(ohlc_df)} footprint bars...")
 
-        logger.info(f"Aggregating trades into footprint bars for {len(ohlc_df)} candles...")
-        for bar_timestamp, ohlc_data in ohlc_df.iterrows():
-            if pd.isna(ohlc_data['open']): # Skip bars with no trades (NaN open)
+        # 3. For each OHLC bar, aggregate bid/ask volumes at each price level
+        for bar_start_timestamp_pd, ohlc_data in ohlc_df.iterrows():
+            # bar_start_timestamp_pd is a pandas Timestamp object
+            bar_start_time_dt = bar_start_timestamp_pd.to_pydatetime() # Convert to Python datetime
+            bar_end_time_dt = bar_start_time_dt + timeframe_delta
+
+            # Filter original trades that fall within this specific bar's time range
+            bar_trades_df = trades_df[
+                (trades_df.index >= bar_start_time_dt) &
+                (trades_df.index < bar_end_time_dt)
+            ]
+
+            if bar_trades_df.empty: # Should generally not happen if ohlc_df had an entry for this timestamp
+                logger.debug(f"No trades found for bar starting at {bar_start_time_dt} (unexpected).")
                 continue
 
-            # bar_timestamp is the start of the interval (from resample)
-            bar_start_time = bar_timestamp.to_pydatetime() # Convert pandas Timestamp to python datetime
-            bar_end_time = bar_start_time + timeframe_delta
-
-            # Filter trades belonging to this specific bar from the original DataFrame
-            # Ensure timezone consistency: bar_start_time is now timezone-aware (UTC)
-            bar_trades_df = trades_df[(trades_df.index >= bar_start_time) & (trades_df.index < bar_end_time)]
-
-            if bar_trades_df.empty:
-                continue # Should not happen if ohlc_data was valid, but as a safeguard
-
+            # Aggregate volume by price and aggressor side for this bar
             price_level_aggregation: Dict[float, Dict[str, float]] = defaultdict(lambda: {'bid_volume': 0.0, 'ask_volume': 0.0})
 
             for _, trade_row in bar_trades_df.iterrows():
                 price = trade_row['price']
                 volume = trade_row['volume']
-                aggressor = trade_row['aggressor_side'] # Already lowercased from DB or ingestion
+                aggressor = trade_row['aggressor_side'] # Assumed to be 'buy' or 'sell'
 
-                if aggressor == 'buy': # Buyer aggressor -> hit the Ask
+                if aggressor == 'buy': # Buyer was aggressor (hit the ask)
                     price_level_aggregation[price]['ask_volume'] += volume
-                elif aggressor == 'sell': # Seller aggressor -> hit the Bid
+                elif aggressor == 'sell': # Seller was aggressor (hit the bid)
                     price_level_aggregation[price]['bid_volume'] += volume
 
             bar_price_levels: List[FootprintPriceLevel] = []
-            bar_total_volume = 0.0
-            bar_total_delta = 0.0
+            bar_total_volume_calculated = 0.0 # Sum of volumes from price levels
+            bar_total_delta_calculated = 0.0  # Sum of deltas from price levels
 
-            # Sort price levels for consistent output
+            # Sort price levels for consistent output in the FootprintBar
             sorted_prices = sorted(price_level_aggregation.keys())
 
             for price in sorted_prices:
                 agg_data = price_level_aggregation[price]
                 bid_vol = agg_data['bid_volume']
                 ask_vol = agg_data['ask_volume']
-                delta = ask_vol - bid_vol # Positive delta: more aggressive buying at this price
+                delta_at_price = ask_vol - bid_vol
                 total_vol_at_price = bid_vol + ask_vol
 
                 bar_price_levels.append(FootprintPriceLevel(
                     price=price,
                     bid_volume=bid_vol,
                     ask_volume=ask_vol,
-                    delta=delta,
+                    delta=delta_at_price,
                     total_volume=total_vol_at_price
                 ))
-                bar_total_volume += total_vol_at_price
-                bar_total_delta += delta
+                bar_total_volume_calculated += total_vol_at_price
+                bar_total_delta_calculated += delta_at_price
 
             footprint_bars.append(FootprintBar(
-                timestamp=bar_start_time, # Ensure this is UTC datetime
-                open=ohlc_data['open'],
-                high=ohlc_data['high'],
-                low=ohlc_data['low'],
-                close=ohlc_data['close'],
-                total_volume=bar_total_volume,
-                total_delta=bar_total_delta,
-                price_levels=bar_price_levels # Already sorted by price
+                timestamp=bar_start_time_dt,
+                open=float(ohlc_data['open']), # Ensure float type
+                high=float(ohlc_data['high']),
+                low=float(ohlc_data['low']),
+                close=float(ohlc_data['close']),
+                total_volume=bar_total_volume_calculated, # Use sum from levels for consistency
+                total_delta=bar_total_delta_calculated,   # Use sum from levels
+                price_levels=bar_price_levels
             ))
 
-        logger.info(f"Generated {len(footprint_bars)} footprint bars.")
+        logger.info(f"Successfully generated {len(footprint_bars)} footprint bars.")
         return FootprintChartDataResponse(
-            exchange=exchange,
-            symbol=symbol,
+            exchange=exchange.lower(), # Standardize output
+            symbol=symbol.lower(),
             timeframe=timeframe_str,
             bars=footprint_bars
         )
-
-# Example of how to handle HTTPException if service raises it, though usually done in endpoint
-from fastapi import HTTPException # For type hinting or direct use if needed here

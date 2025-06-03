@@ -1,11 +1,20 @@
-import logging
-from typing import List, Optional
-from datetime import datetime # For type hinting if converting string timestamp
-from sqlalchemy.orm import Session
-from sqlalchemy import desc # For ordering
+"""
+Service layer for handling trade data operations.
 
-from backend.app.db.models import TradeDB
-from backend.app.models.trade_models import TradeAPIResponse, TradesAPIRequestParams
+This module provides functions to retrieve recent trade data from the database,
+allowing for filtering based on criteria such as time range and minimum volume.
+It interfaces between the database models and the API response models.
+"""
+import logging
+from datetime import datetime # For type hinting, especially with params.since_timestamp_utc
+from typing import List, Optional # Optional is not strictly needed here anymore but good practice.
+
+from sqlalchemy import desc # For ordering results in descending order of timestamp
+from sqlalchemy.orm import Session # For type hinting the database session
+from sqlalchemy.exc import SQLAlchemyError # To catch database-specific exceptions
+
+from backend.app.db.models import TradeDB # The SQLAlchemy model for trades
+from backend.app.models.trade_models import TradeAPIResponse, TradesAPIRequestParams # Pydantic models
 
 logger = logging.getLogger(__name__)
 
@@ -16,51 +25,94 @@ def get_recent_trades(
     params: TradesAPIRequestParams
 ) -> List[TradeAPIResponse]:
     """
-    Fetches recent trades for a given exchange and symbol, with optional filtering.
-    Uses synchronous SQLAlchemy session.
+    Fetches recent trades for a given exchange and symbol from the database,
+    applying optional filtering based on provided parameters.
+
+    The function queries the `TradeDB` table, normalizes exchange and symbol names
+    to lowercase for consistent querying, and applies filters for:
+    - `since_timestamp_utc`: Trades occurring after this timestamp.
+    - `min_volume`: Trades with volume greater than or equal to this value.
+    Results are ordered by timestamp in descending order (most recent first)
+    and limited by `params.limit`.
+
+    Args:
+        db (Session): The SQLAlchemy database session to use for the query.
+        exchange_name (str): The name of the exchange (e.g., "binance").
+            This will be converted to lowercase.
+        symbol_name (str): The trading symbol (e.g., "btcusdt").
+            This will be converted to lowercase.
+        params (TradesAPIRequestParams): A Pydantic model containing filter parameters:
+            - `limit` (int): Maximum number of trades to return.
+            - `since_timestamp_utc` (Optional[datetime]): If provided, only trades
+              after this UTC timestamp are returned. Pydantic V2 / FastAPI typically
+              handle string-to-datetime conversion for query parameters.
+            - `min_volume` (Optional[float]): If provided, only trades with volume
+              greater than or equal to this value are returned.
+
+    Returns:
+        List[TradeAPIResponse]: A list of `TradeAPIResponse` Pydantic models,
+            representing the fetched trades. Returns an empty list if no trades
+            match the criteria or if a database/unexpected error occurs.
     """
+    normalized_exchange = exchange_name.lower()
+    normalized_symbol = symbol_name.lower()
+
     try:
+        logger.debug(
+            f"Fetching trades for {normalized_exchange}/{normalized_symbol} with params: "
+            f"Limit={params.limit}, Since={params.since_timestamp_utc}, MinVol={params.min_volume}"
+        )
+
+        # Start building the query against the TradeDB table
         query = (
             db.query(TradeDB)
             .filter(
-                TradeDB.exchange == exchange_name.lower(),
-                TradeDB.symbol == symbol_name.lower()
+                TradeDB.exchange == normalized_exchange,
+                TradeDB.symbol == normalized_symbol
             )
         )
 
-        # Apply optional filters
+        # Apply optional filter: trades since a specific timestamp
         if params.since_timestamp_utc:
-            try:
-                # Attempt to parse the ISO 8601 string to datetime
-                # Pydantic v2 might do this automatically if the model field is datetime,
-                # but if it's string in Pydantic model, manual parse needed here.
-                # For simplicity, assuming params.since_timestamp_utc is already a datetime if Pydantic model has it as datetime,
-                # or it's a string that needs parsing if Pydantic model has it as string.
-                # The current Pydantic model has it as Optional[str].
-                parsed_since_timestamp = datetime.fromisoformat(params.since_timestamp_utc.replace('Z', '+00:00'))
-                query = query.filter(TradeDB.timestamp > parsed_since_timestamp)
-            except ValueError:
-                logger.warning(f"Invalid since_timestamp_utc format: {params.since_timestamp_utc}. Ignoring filter.")
-                # Or raise HTTPException(400, "Invalid timestamp format") from endpoint
+            # Pydantic V2 with FastAPI should automatically parse ISO string to datetime.
+            # Ensure this datetime is timezone-aware (UTC ideally) or handled consistently.
+            # If `params.since_timestamp_utc` is naive, comparison with aware `TradeDB.timestamp` might behave unexpectedly
+            # depending on DB and SQLAlchemy setup. Assuming `TradeDB.timestamp` is UTC.
+            query = query.filter(TradeDB.timestamp > params.since_timestamp_utc)
 
-        if params.min_volume is not None and params.min_volume > 0:
+        # Apply optional filter: minimum trade volume
+        if params.min_volume is not None and params.min_volume > 0: # `ge=0` in Pydantic, but explicit check for >0 is fine
             query = query.filter(TradeDB.volume >= params.min_volume)
 
-        # Apply ordering and limit
+        # Apply ordering (most recent first) and limit the number of results
         query = query.order_by(desc(TradeDB.timestamp)).limit(params.limit)
 
-        recent_trades_db = query.all()
+        # Execute the query
+        recent_trades_db: List[TradeDB] = query.all()
 
-        # Map SQLAlchemy model instances to Pydantic API response models
-        trades_api: List[TradeAPIResponse] = []
-        for trade_db in recent_trades_db:
-            trades_api.append(TradeAPIResponse.from_orm(trade_db))
+        logger.info(f"Retrieved {len(recent_trades_db)} trades from DB for {normalized_exchange}/{normalized_symbol}.")
+
+        # Map SQLAlchemy model instances to Pydantic API response models.
+        # `TradeAPIResponse.from_orm(trade_db)` handles the conversion.
+        trades_api: List[TradeAPIResponse] = [
+            TradeAPIResponse.from_orm(trade_db) for trade_db in recent_trades_db
+        ]
 
         return trades_api
 
+    except SQLAlchemyError as e:
+        logger.error(
+            f"Database error fetching recent trades for {normalized_exchange}/{normalized_symbol}: {e}",
+            exc_info=True # Include stack trace for DB errors
+        )
+        # In case of a database error, return an empty list.
+        # Depending on application requirements, a custom service exception could be raised here
+        # to be handled by an exception handler in the API layer for a more specific HTTP error response.
+        return []
     except Exception as e:
-        logger.error(f"Error fetching recent trades for {exchange_name}/{symbol_name}: {e}", exc_info=True)
-        # In a real app, you might want to distinguish between DB errors and other errors
-        return [] # Return empty list on error, or re-raise
-
-# Ensure __init__.py exists in services directory (already created)
+        logger.error(
+            f"Unexpected error fetching recent trades for {normalized_exchange}/{normalized_symbol}: {e}",
+            exc_info=True # Include stack trace for any other unexpected errors
+        )
+        # Return an empty list for other unexpected errors as well.
+        return []

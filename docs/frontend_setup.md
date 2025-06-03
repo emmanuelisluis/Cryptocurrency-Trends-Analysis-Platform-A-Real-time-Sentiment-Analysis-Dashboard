@@ -36,62 +36,41 @@ This document provides instructions for setting up the frontend of the Crypto Da
 *   **Environment Variables:**
     *   The frontend can be configured using environment variables, typically defined in a `.env` file in the `frontend/` directory.
     *   A key variable is `REACT_APP_API_BASE_URL`, which specifies the base URL for the backend API.
-        Example: `REACT_APP_API_BASE_URL=/api/v1` (if frontend is served by the same domain as backend, or using a proxy)
-        Or: `REACT_APP_API_BASE_URL=http://localhost:8000/api/v1` (if backend runs on a different port during development).
-    *   Create `.env` by copying `.env.example` if provided, or manually. Standard `create-react-app` environment variable rules apply (must start with `REACT_APP_`).
+        *   Default used in `marketDataService.ts`: `/api/v1`. This assumes the frontend is served from the same domain as the backend, or a reverse proxy is configured to route `/api/v1` requests to the backend.
+        *   For local development where backend runs on `http://localhost:8000` and frontend on `http://localhost:3000`, you might set `REACT_APP_API_BASE_URL=http://localhost:8000/api/v1` in a `.env` file in the `frontend` directory. This requires CORS to be configured on the backend.
+    *   Create `.env` by copying `.env.example` (if provided) or manually. Standard `create-react-app` environment variable rules apply (must start with `REACT_APP_`).
 
 ## 2. Core Frontend Components
 
-*   **`index.tsx`:** The entry point of the React application. Renders the `App` component into the DOM.
+*   **`index.tsx`:** The main entry point of the React application. It renders the `App` component, wrapped with necessary context providers (like `GlobalMarketProvider`), into the root DOM element.
 *   **`App.tsx` & Routing:**
-    *   Main application shell component.
-    *   Sets up `GlobalMarketProvider` for global state.
-    *   Uses `react-router-dom` for client-side routing (e.g., defining paths to different pages like `MarketViewPage`).
-    *   Includes basic layout like global navigation and footer.
+    *   The main application shell component (`AppContent` wrapped by `App` which provides contexts).
+    *   Sets up `GlobalMarketProvider` for global state management of selected exchange, symbol, and timeframe.
+    *   Uses `react-router-dom` for client-side navigation. Defines routes to main pages (e.g., a `HomePage` and the `MarketViewPage`).
+    *   Includes basic application layout structure like global navigation links (e.g., in `App-nav`) and a footer.
 *   **Contexts (`frontend/src/contexts/`):**
-    *   `GlobalMarketContext.tsx`: Manages globally selected `exchange`, `symbol`, and `timeframe`. Provides these values and their setters to any component via the `useGlobalMarket` hook. This allows different components to react to a centralized market selection.
+    *   `GlobalMarketContext.tsx`: Manages and provides globally selected `selectedExchange`, `selectedSymbol`, and `selectedGlobalTimeframe` using React Context. This state is accessible by any component within the `GlobalMarketProvider` via the `useGlobalMarket` custom hook. This allows various charts and controls to synchronize with a single source of truth for the current market context.
 *   **Layout Components (`frontend/src/components/layout/`):**
-    *   `GlobalControlsBar.tsx`: A bar displayed at the top of market views. Contains dropdowns for users to select the global exchange, symbol, and timeframe. Uses `GlobalMarketContext` to reflect and update these global selections.
+    *   `GlobalControlsBar.tsx`: A persistent bar, typically displayed at the top of the `MarketViewPage`. It contains dropdown selectors for users to choose the global exchange, symbol, and analysis timeframe. It interacts with the `GlobalMarketContext` to display and update these selections.
 *   **Pages (`frontend/src/pages/`):**
-    *   `MarketViewPage.tsx`: The main page for displaying all market analysis charts and tools. It consumes `GlobalMarketContext` to get the current market selection and passes these (and the global timeframe) as props to the various chart components. It arranges these components in a responsive layout.
-*   **Chart & Data Display Components (`frontend/src/components/market/`):** These are the primary analytical tools.
-    *   `OrderBookDepthChart.tsx`:
-        *   Displays order book depth using Recharts (Area chart).
-        *   Shows aggregated imbalance statistics and Order Book Depth Gradient (OBDG) data.
-        *   Polls the backend for updates.
-    *   `TimeAndSalesLog.tsx`:
-        *   Displays a chronological list of recent trades ("tape").
-        *   Allows filtering by trade limit and minimum volume.
-        *   Highlights large trades based on a user-configurable threshold.
-        *   Polls for new trades.
-    *   `FootprintChart.tsx`:
-        *   Renders footprint charts using a custom Recharts configuration (BarChart with Customized cells).
-        *   Displays bid volume vs. ask volume at each price level within bars.
-        *   Highlights Delta, Point of Control (POC), significant imbalances, and potential unfinished auctions.
-        *   Allows user to select timeframe and date range for data.
-        *   Integrates ML prediction triggers:
-            *   Clicking a bar can trigger Momentum Sustainability and Breakout Viability predictions.
-            *   Clicking a price cell within a bar can trigger Absorption Outcome predictions.
-        *   Displays ML prediction results in a dedicated section.
-    *   `VolumeProfileChart.tsx`:
-        *   Displays volume profile as a horizontal bar chart (Recharts `BarChart` with `layout="vertical"`).
-        *   Shows total volume traded at each price level over a selected period/range.
-        *   Highlights POC and Value Area (VA).
-        *   Allows selection of profile type (daily, weekly, monthly, range) and relevant date/range parameters.
-    *   `CVDChart.tsx` (Cumulative Volume Delta):
-        *   Displays CVD as a line chart using Recharts.
-        *   Allows selection of timeframe for underlying bar deltas, date range, and CVD reset condition (none, daily).
-        *   Includes a feature for users to draw divergence lines directly on the chart.
-    *   `AdvancedDeltaMetricsChart.tsx`:
-        *   Displays DVPR (Delta Volume Pressure Ratio) and DMRV (Delta Moving Average Rate of Change/Value) in separate line charts using Recharts.
-        *   Allows selection of timeframe, date range, and parameters for ATR and DMRV moving averages.
+    *   `MarketViewPage.tsx`: The primary page for displaying all market analysis charts and tools. It consumes the `GlobalMarketContext` to get the current market selection and passes these (exchange, symbol, global timeframe) as props to the various chart components. It arranges these components in a responsive grid-like layout using CSS flexbox (`market-data-layout`, `market-data-row`).
+*   **Chart & Data Display Components (`frontend/src/components/market/`):** These are the core analytical tools.
+    *   `OrderBookDepthChart.tsx`: Visualizes order book depth using Recharts Area charts. Displays aggregated imbalance statistics at various depth levels and Order Book Depth Gradient (OBDG) data. Polls the backend `/order_book` endpoint for live updates.
+    *   `TimeAndSalesLog.tsx`: Shows a chronological list ("tape") of recent trades. Features include filtering by trade limit and minimum volume, and highlighting of large trades based on a user-configurable threshold. Polls the backend `/trades` endpoint.
+    *   `FootprintChart.tsx`: A complex component that renders footprint charts using a custom Recharts configuration (BarChart with Customized cells). It displays bid volume vs. ask volume at each price level within time-based bars. Visual cues include Delta per price, Total Bar Delta, Point of Control (POC), significant bid/ask imbalances at price levels, and potential unfinished auctions. Users can select timeframe and date range. This chart also integrates ML prediction triggers:
+        *   Clicking a full bar can trigger Momentum Sustainability and Breakout Viability predictions.
+        *   Clicking an individual price cell within a bar can trigger Absorption Outcome predictions.
+        *   Prediction results (simulated) are displayed in a dedicated section.
+    *   `VolumeProfileChart.tsx`: Displays volume profile as a horizontal bar chart using Recharts (`layout="vertical"`). Shows total volume traded at each price level over a user-selected period (daily, weekly, monthly, or custom range). Highlights POC and Value Area (VA).
+    *   `CVDChart.tsx` (Cumulative Volume Delta): Renders CVD as a line chart (Recharts). Allows selection of timeframe for underlying bar deltas, date range, and CVD reset condition (none or daily). Includes a user-interactive feature for drawing divergence lines on the chart.
+    *   `AdvancedDeltaMetricsChart.tsx`: Displays DVPR (Delta Volume Pressure Ratio) and DMRV (Delta Moving Average Rate of Change/Value) in separate line charts (Recharts). Allows user configuration of timeframe, date range, and parameters like ATR period and DMRV moving average periods.
 *   **API Service (`frontend/src/services/marketDataService.ts`):**
-    *   Contains all functions responsible for making API calls to the backend.
-    *   Uses the `fetch` API to interact with FastAPI endpoints.
-    *   Defines TypeScript interfaces for API request parameters and response payloads, ensuring type safety.
-    *   Includes functions for fetching order book data, trades, footprint data, volume profiles, CVD, advanced delta metrics, and for posting ML prediction requests.
+    *   Centralizes all asynchronous functions responsible for making API calls to the backend.
+    *   Uses the browser's `fetch` API to interact with the backend FastAPI endpoints.
+    *   Defines comprehensive TypeScript interfaces for all API request parameters and response payloads, ensuring type safety throughout the frontend application. This includes interfaces for order book data, trades, footprint data, volume profiles, CVD, advanced delta metrics, and all ML prediction inputs/outputs.
+    *   Handles basic error checking for API responses (e.g., `!response.ok`).
 *   **Styling:**
-    *   Each major component typically has its own CSS file (e.g., `FootprintChart.css`).
-    *   Global styles are in `App.css` and `index.css`.
-    *   The approach is standard CSS, not CSS-in-JS or utility-first frameworks for this project phase.
+    *   Each major component typically has an associated CSS file (e.g., `FootprintChart.css`, `GlobalControlsBar.css`) for specific styles.
+    *   Global or shared styles are present in `App.css` and `index.css`.
+    *   The project uses standard CSS without pre-processors like SASS/LESS or utility-first frameworks like Tailwind CSS in its current state.
 ```

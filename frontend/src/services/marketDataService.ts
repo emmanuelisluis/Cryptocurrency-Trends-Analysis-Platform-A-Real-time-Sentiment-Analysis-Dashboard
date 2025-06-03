@@ -1,5 +1,12 @@
+/**
+ * Service module for fetching market data and ML predictions from the backend API.
+ * Defines TypeScript interfaces for API request parameters and response payloads,
+ * and provides async functions for making API calls.
+ */
+
 // Define TypeScript interfaces for the API response based on Pydantic models
 
+/** Represents a single price level in an order book. */
 export interface OrderBookLevel {
     price: number;
     quantity: number; // Corresponds to OrderBookLevelAPI's 'quantity'
@@ -23,7 +30,7 @@ export interface OrderBookSnapshot {
     obdg_data?: OBDGData;
 }
 
-// Interface for OBDG Data
+/** Represents data for Order Book Depth Gradient (OBDG). */
 export interface OBDGData {
     near_market_depth: number;
     far_market_depth_start: number;
@@ -33,13 +40,14 @@ export interface OBDGData {
     overall_gradient_strength?: number | null;
 }
 
-
-// Interfaces for CVD (Cumulative Volume Delta) Data
+// --- CVD (Cumulative Volume Delta) Data ---
+/** Represents a single data point for CVD. */
 export interface CVDDataPoint {
     timestamp: string;
     cvd_value: number;
 }
 
+/** Structure for CVD chart data response. */
 export interface CVDChartData {
     exchange: string;
     symbol: string;
@@ -48,6 +56,7 @@ export interface CVDChartData {
     cvd_points: CVDDataPoint[];
 }
 
+/** Parameters for fetching CVD data. */
 export interface FetchCVDParams {
     timeframe: string;
     start_time_utc?: string;
@@ -55,23 +64,25 @@ export interface FetchCVDParams {
     reset_condition?: 'none' | 'daily';
 }
 
-
-// Interfaces for Advanced Delta Metrics (DVPR, DMRV)
+// --- Advanced Delta Metrics (DVPR, DMRV) ---
+/** Represents a single data point for DVPR. */
 export interface DVPRDataPoint {
-    timestamp: string; // or Date
+    timestamp: string;
     dvpr_value?: number | null;
     bar_delta: number;
     bar_volume: number;
     bar_atr?: number | null;
 }
 
+/** Represents a single data point for DMRV. */
 export interface DMRVDataPoint {
-    timestamp: string; // or Date
+    timestamp: string;
     short_delta_ma?: number | null;
     long_delta_ma?: number | null;
     dmrv_value?: number | null;
 }
 
+/** Structure for Advanced Delta Metrics API response. */
 export interface AdvancedDeltaMetricsData {
     exchange: string;
     symbol: string;
@@ -80,54 +91,56 @@ export interface AdvancedDeltaMetricsData {
     dmrv_points: DMRVDataPoint[];
 }
 
+/** Parameters for fetching Advanced Delta Metrics. */
 export interface FetchAdvancedDeltaMetricsParams {
     timeframe: string;
-    start_time_utc?: string; // ISO
-    end_time_utc?: string; // ISO
+    start_time_utc?: string;
+    end_time_utc?: string;
     atr_period?: number;
     dmrv_short_ma?: number;
     dmrv_long_ma?: number;
 }
 
-
-// Interfaces for ML Predictions
+// --- ML Predictions ---
+/** Input features for Momentum Sustainability model. */
 export interface MomentumSustainabilityInputFeatures {
-    bar_timestamp: string; // ISO datetime string
+    bar_timestamp: string;
     bar_delta: number;
     bar_volume: number;
     recent_cvd_slope?: number | null;
     market_volatility_atr?: number | null;
-    // Add other features if defined in backend Pydantic model
 }
 
+/** Output structure for Momentum Sustainability prediction. */
 export interface MomentumSustainabilityOutput {
-    timestamp_event: string; // ISO datetime string
+    timestamp_event: string;
     sustainability_score: number;
     confidence?: number | null;
     model_version?: string | null;
 }
 
-// Interfaces for Breakout Viability Prediction
+/** Input features for Breakout Viability model. */
 export interface BreakoutViabilityInputFeatures {
     breakout_price_level: number;
-    bar_timestamp_breakout_attempt: string; // ISO datetime string
+    bar_timestamp_breakout_attempt: string;
     volume_at_breakout_bar: number;
     delta_at_breakout_bar: number;
     recent_volatility_atr?: number | null;
     distance_from_key_level?: number | null;
 }
 
+/** Output structure for Breakout Viability prediction. */
 export interface BreakoutViabilityOutput {
-    timestamp_event: string; // ISO datetime string
+    timestamp_event: string;
     breakout_price_level: number;
     probability_true_breakout: number;
     probability_false_breakout: number;
     model_version?: string | null;
 }
 
-// Interfaces for Absorption Event Outcome Prediction
+/** Input features for Absorption Event Outcome model. */
 export interface AbsorptionEventInputFeatures {
-    event_timestamp: string; // ISO datetime string
+    event_timestamp: string;
     absorption_price_level: number;
     volume_at_absorption_level: number;
     delta_at_absorption_level: number;
@@ -138,27 +151,29 @@ export interface AbsorptionEventInputFeatures {
     order_book_pressure_asks?: number | null;
 }
 
+/** Output structure for Absorption Event Outcome prediction. */
 export interface AbsorptionOutcomeOutput {
-    timestamp_event: string; // ISO datetime string
+    timestamp_event: string;
     absorption_price_level: number;
-    predicted_outcome_label: string; // "Reversal", "Continuation", "Consolidation"
+    predicted_outcome_label: string;
     probability_reversal: number;
     probability_continuation: number;
     probability_consolidation: number;
     model_version?: string | null;
 }
 
-
-// Interfaces for Volume Profile Data
+// --- Volume Profile Data ---
+/** Represents a single price level in a Volume Profile. */
 export interface VolumeProfileLevelData {
     price: number;
     total_volume: number;
 }
 
+/** Structure for Volume Profile API response. */
 export interface VolumeProfileData {
     profile_type: string;
-    start_time_utc: string; // ISO 8601 datetime string
-    end_time_utc: string;   // ISO 8601 datetime string
+    start_time_utc: string;
+    end_time_utc: string;
     levels: VolumeProfileLevelData[];
     point_of_control_price?: number;
     point_of_control_volume?: number;
@@ -167,36 +182,36 @@ export interface VolumeProfileData {
     total_profile_volume: number;
 }
 
+/** Parameters for fetching Volume Profile data. */
 export interface FetchVolumeProfileParams {
     profile_type: 'daily' | 'weekly' | 'monthly' | 'range';
-    date_utc?: string;          // YYYY-MM-DD for daily/weekly/monthly
-    start_time_utc?: string;    // ISO 8601 string for range
-    end_time_utc?: string;      // ISO 8601 string for range
+    date_utc?: string;
+    start_time_utc?: string;
+    end_time_utc?: string;
     tick_size?: number;
 }
 
-
-
-// Interfaces for Trade Data (as previously defined)
+// --- Trade Data ---
+/** Represents a single trade. */
 export interface Trade {
     timestamp: string;
     symbol: string;
     exchange: string;
     price: number;
     volume: number;
-    side: 'buy' | 'sell'; // Or string if other values are possible from backend
+    side: 'buy' | 'sell';
     trade_id: string;
-    // aggressor_side?: 'buy' | 'sell';
 }
 
+/** Parameters for fetching recent trades. */
 export interface FetchTradesParams {
     limit?: number;
     since_timestamp_utc?: string;
     min_volume?: number;
 }
 
-
-// Interfaces for Footprint Chart Data
+// --- Footprint Chart Data ---
+/** Represents aggregated bid/ask volume at a price level within a Footprint bar. */
 export interface FootprintPriceLevelData {
     price: number;
     bid_volume: number;
@@ -205,8 +220,9 @@ export interface FootprintPriceLevelData {
     total_volume: number;
 }
 
+/** Represents a single bar in a Footprint chart. */
 export interface FootprintBarData {
-    timestamp: string; // ISO 8601 datetime string
+    timestamp: string;
     open: number;
     high: number;
     low: number;
@@ -214,9 +230,9 @@ export interface FootprintBarData {
     total_volume: number;
     total_delta: number;
     price_levels: FootprintPriceLevelData[];
-    // point_of_control_price?: number; // Optional, if backend provides
 }
 
+/** Structure for Footprint chart data API response. */
 export interface FootprintChartData {
     exchange: string;
     symbol: string;
@@ -224,14 +240,16 @@ export interface FootprintChartData {
     bars: FootprintBarData[];
 }
 
+/** Parameters for fetching Footprint chart data. */
 export interface FetchFootprintParams {
-    timeframe: string;        // e.g., "1m", "5m", "1H"
-    start_time_utc?: string;  // ISO 8601 string, optional
-    end_time_utc?: string;    // ISO 8601 string, optional
+    timeframe: string;
+    start_time_utc?: string;
+    end_time_utc?: string;
 }
 
+// --- API Service ---
 
-const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || "/api/v1"; // Default if not set in .env
+const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || "/api/v1";
 
 /**
  * Fetches the latest order book snapshot from the backend API.

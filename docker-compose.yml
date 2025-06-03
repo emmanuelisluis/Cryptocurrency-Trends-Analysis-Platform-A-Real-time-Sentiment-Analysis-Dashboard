@@ -28,18 +28,23 @@ services:
     volumes:
       # For development: hot-reloading of backend code.
       # Mounts the host's ./backend directory into /app in the container.
-      # For production, this volume mount should typically be removed to use code baked into the image.
+      # THIS IS FOR DEVELOPMENT ONLY to enable hot-reloading of Python code.
+      # For production, remove this volume mount to use the code baked into the image by Dockerfile's COPY step.
       - ./backend:/app
       # Example for ML models if they are not part of the image and you want to mount them from host:
-      # - ./backend/app/ml_models:/app/ml_models
-      # This assumes your .pkl files are in backend/app/ml_models on your host.
-      # If the Dockerfile copies them, this volume isn't strictly needed for models unless you're updating them live.
+      # - ./backend/app/ml_models:/app/ml_models # Mount if models are local and not in image
     depends_on:
       db:
-        condition: service_healthy # Wait for DB to be healthy (requires healthcheck in db service)
+        condition: service_healthy # Wait for DB to be healthy
     networks:
       - crypto-net
     restart: unless-stopped
+    healthcheck: # Basic healthcheck for the backend API
+      test: ["CMD-SHELL", "curl -f http://localhost:8000/ || exit 1"] # Hits the root endpoint
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s # Give time for Uvicorn and lifespan startup
 
   frontend:
     build:
@@ -47,15 +52,24 @@ services:
       dockerfile: Dockerfile
     container_name: crypto-dashboard-frontend
     ports:
-      - "3000:80" # Exposes frontend (Nginx) on host port 3000
+      - "3000:80" # Exposes frontend (Nginx running on port 80) on host port 3000
     # environment:
-      # Can pass build arguments to frontend Dockerfile here if needed, e.g.:
-      # REACT_APP_API_BASE_URL=/api/v1 # If Nginx on frontend proxies to backend
+      # Example: Pass API URL for frontend to use if not proxying via Nginx
+      # - REACT_APP_API_BASE_URL=http://localhost:8000/api/v1
+      # Or, if Nginx proxies /api/v1 to backend:
+      # - REACT_APP_API_BASE_URL=/api/v1
     depends_on:
-      - backend # Ensures backend is started, useful if frontend proxies to backend
+      backend:
+        condition: service_healthy # Wait for backend to be healthy before starting frontend (useful if proxying)
     networks:
       - crypto-net
     restart: unless-stopped
+    healthcheck: # Basic healthcheck for Nginx
+      test: ["CMD-SHELL", "wget -q --spider http://localhost:80/ || exit 1"] # Checks if Nginx is serving
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 10s # Nginx starts quickly
 
   db:
     image: timescale/timescaledb-ha:pg14-ts2.10-latest # Using HA image for TimescaleDB features, pg14

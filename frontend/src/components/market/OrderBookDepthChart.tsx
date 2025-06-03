@@ -9,19 +9,40 @@ import {
     CartesianGrid,
     Legend,
 } from 'recharts';
-import { fetchOrderBookSnapshot, OrderBookSnapshot, ImbalanceAtDepth, OBDGData } from '../../services/marketDataService'; // Added OBDGData
+import {
+    fetchOrderBookSnapshot,
+    OrderBookSnapshot,
+    ImbalanceAtDepth,
+    OBDGData
+} from '../../services/marketDataService';
+import './OrderBookDepthChart.css'; // Assuming styles are in this file
 
+/**
+ * Props for the OrderBookDepthChart component.
+ */
 interface OrderBookDepthChartProps {
+    /** The exchange from which to fetch data. */
     exchange: string;
+    /** The trading symbol (e.g., "btcusdt"). */
     symbol: string;
-    pollInterval?: number; // Milliseconds
+    /** Interval in milliseconds for polling data. Defaults to 5000ms. */
+    pollInterval?: number;
 }
 
-// Helper function to process order book data for charting
+/**
+ * Processes raw order book snapshot data to prepare it for depth chart rendering.
+ * Calculates cumulative quantities for bids and asks.
+ * @param data The raw OrderBookSnapshot data from the API.
+ * @param maxLevels Maximum number of bid/ask levels to process and display.
+ * @returns An object containing processed bid and ask data arrays suitable for Recharts.
+ */
 const processOrderBookForChart = (data: OrderBookSnapshot | null, maxLevels: number = 20) => {
-    if (!data) return { bids: [], asks: [] };
+    if (!data) {
+        return { bids: [], asks: [] };
+    }
 
     let cumulativeBidQuantity = 0;
+    // Process bids: sort by price descending, take top N, calculate cumulative quantity
     const processedBids = data.bids
         .slice(0, maxLevels)
         .sort((a, b) => b.price - a.price)
@@ -46,41 +67,49 @@ const processOrderBookForChart = (data: OrderBookSnapshot | null, maxLevels: num
                 cumulativeQuantity: cumulativeAskQuantity,
             };
         });
+    // Process asks: sort by price ascending, take top N, calculate cumulative quantity
+    const processedAsks = data.asks
+        .slice(0, maxLevels)
+        .sort((a, b) => a.price - b.price)
+        .map(level => {
+            cumulativeAskQuantity += level.quantity;
+            return {
+                price: level.price,
+                quantity: level.quantity,
+                cumulativeQuantity: cumulativeAskQuantity,
+            };
+        });
     return { bids: processedBids, asks: processedAsks };
 };
 
+/**
+ * Sub-component to display Order Book Imbalance statistics.
+ * @param props Component props.
+ * @param props.imbalances Array of imbalance data.
+ */
 const OrderBookImbalanceDisplay: React.FC<{ imbalances: ImbalanceAtDepth[] }> = ({ imbalances }) => {
-    if (!imbalances || imbalances.length === 0) {
-        return <p>No imbalance data available.</p>;
-    }
+    // Note: Inline styles are used here for brevity in this example.
+    // In a larger application, these would ideally be in a CSS file.
     return (
-        <div className="order-book-imbalances" style={{ marginTop: '20px', padding: '10px', border: '1px solid #eee', borderRadius: '4px' }}>
-            <h4>Order Book Imbalance:</h4>
+        <div className="order-book-imbalances">
+            <h4>Order Book Imbalance</h4>
             {imbalances.map((imb) => (
-                <div key={imb.depth_level} className="imbalance-level" style={{ marginBottom: '10px', paddingBottom: '5px', borderBottom: '1px dashed #f0f0f0' }}>
-                    <p style={{ margin: '2px 0', fontSize: '0.9em' }}>
+                <div key={imb.depth_level} className="imbalance-level">
+                    <p>
                         <strong>Depth {imb.depth_level}:</strong>
                         Bid Vol: {imb.bid_volume.toFixed(2)},
                         Ask Vol: {imb.ask_volume.toFixed(2)},
                         Ratio: {(imb.imbalance_ratio * 100).toFixed(1)}%
                     </p>
-                    <div style={{ display: 'flex', height: '18px', backgroundColor: '#ddd', borderRadius: '3px', overflow: 'hidden' }}>
+                    <div className="imbalance-bar-container">
                         <div
-                            style={{
-                                width: `${imb.imbalance_ratio * 100}%`,
-                                backgroundColor: 'rgba(0, 177, 103, 0.7)', // Green for bids
-                                height: '100%',
-                                transition: 'width 0.3s ease-in-out',
-                            }}
+                            className="imbalance-bar-bid"
+                            style={{ width: `${imb.imbalance_ratio * 100}%`}}
                             title={`Bid Side: ${(imb.imbalance_ratio * 100).toFixed(1)}%`}
                         />
                         <div
-                            style={{
-                                width: `${(1 - imb.imbalance_ratio) * 100}%`,
-                                backgroundColor: 'rgba(255, 87, 51, 0.7)', // Red for asks
-                                height: '100%',
-                                transition: 'width 0.3s ease-in-out',
-                            }}
+                            className="imbalance-bar-ask"
+                            style={{ width: `${(1 - imb.imbalance_ratio) * 100}%`}}
                             title={`Ask Side: ${((1 - imb.imbalance_ratio) * 100).toFixed(1)}%`}
                         />
                     </div>
@@ -90,16 +119,19 @@ const OrderBookImbalanceDisplay: React.FC<{ imbalances: ImbalanceAtDepth[] }> = 
     );
 };
 
+/**
+ * Sub-component to display Order Book Depth Gradient (OBDG) statistics.
+ * @param props Component props.
+ * @param props.obdgData OBDG data object.
+ */
 const OBDGDisplay: React.FC<{ obdgData: OBDGData }> = ({ obdgData }) => {
-    if (!obdgData) return <p>No OBDG data available.</p>;
-
-    const formatRatio = (ratio?: number | null) =>
+    const formatRatio = (ratio?: number | null): string =>
         (ratio !== null && ratio !== undefined ? ratio.toFixed(2) : 'N/A');
 
     return (
-        <div className="order-book-obdg-stats" style={{ marginTop: '15px', padding: '10px', border: '1px solid #eee', borderRadius: '4px', fontSize: '0.9em' }}>
-            <h5 style={{marginTop: 0, marginBottom: '8px', borderBottom: '1px solid #f0f0f0', paddingBottom: '5px'}}>
-                Order Book Depth Gradient
+        <div className="order-book-obdg-stats">
+            <h5>
+                Order Book Depth Gradient <br />
                 (Near: {obdgData.near_market_depth} vs Far: {obdgData.far_market_depth_start}-{obdgData.far_market_depth_end})
             </h5>
             <p>Bid Ratio (Near/Far): <strong>{formatRatio(obdgData.bid_ratio_near_to_far)}</strong></p>
@@ -109,128 +141,168 @@ const OBDGDisplay: React.FC<{ obdgData: OBDGData }> = ({ obdgData }) => {
     );
 };
 
-
+/**
+ * OrderBookDepthChart Component:
+ * Fetches and displays order book depth data as an area chart,
+ * along with imbalance and OBDG statistics.
+ * Polls for new data at a specified interval.
+ * @param props Component props.
+ */
 const OrderBookDepthChart: React.FC<OrderBookDepthChartProps> = ({
     exchange,
     symbol,
-    pollInterval = 5000,
+    pollInterval = 5000, // Default poll interval 5 seconds
 }) => {
     const [orderBookData, setOrderBookData] = useState<OrderBookSnapshot | null>(null);
     const [isLoading, setIsLoading] = useState<boolean>(true);
     const [error, setError] = useState<string | null>(null);
 
+    // Data fetching and polling effect
     useEffect(() => {
-        let isMounted = true;
+        let isMounted = true; // Flag to prevent state updates on unmounted component
+
         const fetchData = async () => {
             if (!isMounted) return;
-            // Keep previous loading state if we already have data (for smoother refresh)
-            if (!orderBookData) setIsLoading(true);
-            else setIsLoading(false); // Or set a specific "isRefreshing" state
+
+            // Set loading state: true if no data yet, otherwise indicate refresh (isLoading remains false)
+            if (!orderBookData) {
+                setIsLoading(true);
+            }
+            // For subsequent fetches, isLoading might be set to a different "isRefreshing" state
+            // or handled by observing if orderBookData timestamp changes.
 
             try {
                 const data = await fetchOrderBookSnapshot(exchange, symbol);
                 if (isMounted) {
                     setOrderBookData(data);
-                    setError(null);
+                    setError(null); // Clear any previous errors
                 }
             } catch (err) {
                 if (isMounted) {
-                    if (err instanceof Error) setError(err.message);
-                    else setError('An unknown error occurred.');
+                    if (err instanceof Error) {
+                        setError(err.message);
+                    } else {
+                        setError('An unknown error occurred while fetching order book data.');
+                    }
+                    // Optionally, keep stale data by not setting orderBookData to null,
+                    // or clear it: setOrderBookData(null);
                 }
             } finally {
-                if (isMounted) setIsLoading(false);
+                if (isMounted) {
+                    setIsLoading(false); // Set loading to false after fetch attempt
+                }
             }
         };
 
-        fetchData();
-        const intervalId = setInterval(fetchData, pollInterval);
+        fetchData(); // Initial fetch
+        const intervalId = setInterval(fetchData, pollInterval); // Setup polling
+
+        // Cleanup function for when the component unmounts or dependencies change
         return () => {
             isMounted = false;
             clearInterval(intervalId);
         };
-    }, [exchange, symbol, pollInterval, orderBookData]); // Added orderBookData to dependencies to control setIsLoading correctly on refresh
+    }, [exchange, symbol, pollInterval]); // Removed orderBookData from deps: Polling should not depend on data changing.
+                                          // Re-fetching is based on interval.
 
+    // Memoized processed chart data
     const chartData = useMemo(() => processOrderBookForChart(orderBookData), [orderBookData]);
 
+    // Conditional rendering based on state
     if (isLoading && !orderBookData) {
-        return <div>Loading depth chart for {symbol} on {exchange}...</div>;
+        return <div className="chart-loading-message">Loading depth chart for {symbol.toUpperCase()} on {exchange.toUpperCase()}...</div>;
     }
 
     if (error) {
-        return <div style={{ color: 'red' }}>Error: {error} (fetching {symbol} on {exchange})</div>;
+        return <div className="chart-error-message">Error: {error} (while fetching {symbol.toUpperCase()} on {exchange.toUpperCase()})</div>;
     }
 
-    if (!orderBookData || chartData.bids.length === 0 || chartData.asks.length === 0) {
-        return <div>No order book data available for {symbol} on {exchange}.</div>;
+    if (!orderBookData || (chartData.bids.length === 0 && chartData.asks.length === 0)) { // Check both bids and asks
+        return <div className="chart-no-data-message">No order book data available for {symbol.toUpperCase()} on {exchange.toUpperCase()}.</div>;
     }
 
+    // Determine price domain for Y-axis for better chart readability
     const allPrices = [...chartData.bids.map(b => b.price), ...chartData.asks.map(a => a.price)];
-    const yDomain = [Math.min(...allPrices) * 0.995, Math.max(...allPrices) * 1.005];
+    const yPriceDomain: [number, number] = allPrices.length > 0
+        ? [Math.min(...allPrices) * 0.995, Math.max(...allPrices) * 1.005]
+        : ['auto', 'auto']; // Fallback if no prices (should be caught by no data message)
+
 
     return (
-        <div style={{border: '1px solid #ccc', padding: '15px', borderRadius: '5px'}}>
-            <h4 style={{ textAlign: 'center', marginBottom: '10px' }}>
-                Order Book Depth: {symbol.toUpperCase()} on {exchange.toUpperCase()}
+        <div className="order-book-depth-chart-wrapper">
+            <h4> {/* Title moved to MarketViewPage for global context */}
+                {/* Order Book Depth: {symbol.toUpperCase()} on {exchange.toUpperCase()} */}
             </h4>
-            {isLoading && <p style={{fontSize: '0.8em', textAlign: 'center', fontStyle: 'italic'}}>Refreshing...</p>}
+            {isLoading && orderBookData && <p className="chart-refresh-indicator">Refreshing...</p>}
 
-            <div style={{ width: '100%', height: 300 }}> {/* Chart container */}
+            <div style={{ width: '100%', height: 300 }}>
                 <ResponsiveContainer>
-                    <AreaChart margin={{ top: 5, right: 20, left: 20, bottom: 5 }}>
+                    <AreaChart data={chartData.bids.concat(chartData.asks)} /* Pass combined for domain calculation if needed, but individual data props on <Area> are key */
+                               margin={{ top: 5, right: 20, left: 20, bottom: 5 }}>
                         <CartesianGrid strokeDasharray="3 3" />
                         <XAxis
                             type="number"
                             dataKey="cumulativeQuantity"
                             name="Cumulative Quantity"
-                            // reversed for bids might be an option depending on desired chart orientation
+                            tickFormatter={(val) => `${(val / 1000).toFixed(1)}k`} // Example: format large numbers
+                            // reversed={false} // Consider if one side needs reversal for traditional depth chart look
                         />
                         <YAxis
                             type="number"
                             dataKey="price"
                             name="Price"
-                            domain={yDomain}
+                            domain={yPriceDomain}
                             allowDataOverflow
-                            tickFormatter={(price) => price.toFixed(2)} // Simplified formatting
+                            tickFormatter={(price) => Number(price).toFixed(2)} // Ensure price is number before toFixed
+                            orientation="right" // Common to have price on right for depth charts
                         />
                         <Tooltip
-                            formatter={(value: number, name: string) => [value.toFixed(2), name]}
-                            labelFormatter={(label) => `Cum. Qty: ${label.toFixed(2)}`}
+                            formatter={(value: number, name: string, props: any) => {
+                                const pointData = props.payload;
+                                return [`${pointData.quantity.toFixed(4)} @ ${pointData.price.toFixed(2)} (Cum: ${Number(value).toFixed(4)})`, name];
+                            }}
+                            labelFormatter={(label, payload) => {
+                                // Label might be cumulative quantity if XAxis is quantity.
+                                // If XAxis is price, label would be price.
+                                // Try to get price from payload if available.
+                                if (payload && payload.length > 0 && payload[0].payload.price) {
+                                     return `Price: ${payload[0].payload.price.toFixed(2)}`;
+                                }
+                                return `Cum.Qty: ${Number(label).toFixed(2)}`;
+                            }}
                         />
                         <Legend />
                         <Area
                             type="stepAfter"
-                            dataKey="price" // Y-value for the area
+                            dataKey="price" // Y-values for the area chart come from the 'price' field
+                            name="Bids"
                             data={chartData.bids}
                             stroke="#00B167"
                             fill="#00B167"
                             fillOpacity={0.3}
-                            name="Bids"
                             connectNulls
                         />
                         <Area
                             type="stepAfter"
-                            dataKey="price" // Y-value for the area
+                            dataKey="price" // Y-values for the area chart come from the 'price' field
+                            name="Asks"
                             data={chartData.asks}
                             stroke="#FF5733"
                             fill="#FF5733"
                             fillOpacity={0.3}
-                            name="Asks"
                             connectNulls
                         />
                     </AreaChart>
                 </ResponsiveContainer>
             </div>
-            <p style={{fontSize: '0.8em', textAlign: 'center', color: '#555'}}>
-                X-axis: Cumulative Quantity, Y-axis: Price.
+            <p className="chart-axes-note">
+                X-axis: Cumulative Quantity, Y-axis: Price. (Bids from right-to-left, Asks from left-to-right if XAxis reversed for one)
             </p>
 
-            {/* Display Imbalance Data */}
             {orderBookData.imbalances && orderBookData.imbalances.length > 0 && (
                 <OrderBookImbalanceDisplay imbalances={orderBookData.imbalances} />
             )}
 
-            {/* Display OBDG Data */}
             {orderBookData.obdg_data && (
                 <OBDGDisplay obdgData={orderBookData.obdg_data} />
             )}

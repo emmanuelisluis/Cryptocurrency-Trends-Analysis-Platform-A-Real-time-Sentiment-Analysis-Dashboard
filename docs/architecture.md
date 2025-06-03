@@ -20,55 +20,68 @@ This document outlines the technical architecture of the Crypto Dashboard applic
     ```
 
 ## 2. Backend Architecture
-*   **Technology Stack:** Python 3.10+, FastAPI, SQLAlchemy (with TimescaleDB dialect for hypertables), Pydantic, Pandas, Uvicorn.
-*   **Core Services:**
-    *   `DataIngestionService`: Connects to exchange WebSockets (e.g., Binance), normalizes trade, order book, and ticker data into Pydantic models, and stores them in TimescaleDB.
-    *   `OrderBookService`: Provides API endpoints to retrieve the latest order book snapshots, including calculated imbalances and Order Book Depth Gradient (OBDG) metrics.
-    *   `TradeService`: Offers API endpoints for fetching recent trades with filtering capabilities (limit, timestamp, volume).
-    *   `FootprintService`: Aggregates raw trade data (especially aggressor side) into footprint bars (time-based, showing bid/ask volume at each price level). Exposes this data via an API.
-    *   `VolumeProfileService`: Calculates Volume Profile (total volume at price levels over a specified range or period), including Point of Control (POC) and Value Area (VA). Served via API.
-    *   `DeltaAnalysisService`:
-        *   Calculates Cumulative Volume Delta (CVD) based on total deltas from footprint bars, with options for daily reset.
-        *   Calculates advanced delta metrics: Delta Volume Pressure Ratio (DVPR) and Delta Moving Average Rate of Change (DMRV), using ATR and moving averages on bar deltas. Served via API.
-    *   `MLPredictionService`: Manages (simulated) ML models. Provides a framework to load models and serve predictions via API endpoints for:
-        *   Momentum Sustainability
-        *   Breakout Viability
-        *   Absorption Event Outcome
+     *   **Technology Stack:** Python 3.10+, FastAPI, SQLAlchemy (ORM), TimescaleDB (PostgreSQL extension), Pandas (for data analysis & manipulation), Pydantic (for data validation & settings), Uvicorn (ASGI server).
+     *   **Directory Structure (`backend/app/`):**
+         *   `main.py`: FastAPI app initialization, router inclusion, lifespan events.
+         *   `core/`: Configuration (`config.py`), core dependencies.
+         *   `db/`: Database models (`models.py`), session management (`session.py`), initialization scripts (`init_db.py`).
+         *   `models/`: Pydantic models for API requests/responses and internal data structures.
+         *   `services/`: Business logic layer, data processing, interactions between components.
+         *   `api/endpoints/`: FastAPI routers defining API paths and request handlers.
+         *   `utils/`: Shared utility functions (e.g., time parsing, technical analysis).
+         *   `ml_models/`: (Conceptual) Intended location for serialized ML model files.
+     *   **Core Services & Interactions:**
+         *   `DataIngestionService`: Manages `BinanceWebSocketClient` (or other exchange clients). Normalizes data from exchanges and uses `db_data_handler` (which creates its own DB session) to store data in TimescaleDB.
+         *   `OrderBookService`, `TradeService`: Provide data directly from database queries, formatting results using Pydantic models defined in `models/order_book_models.py` and `models/trade_models.py`.
+         *   `FootprintService`: Fetches raw trades (via `TradeDB`), then uses Pandas to perform time-based resampling and aggregation to construct footprint bars.
+         *   `VolumeProfileService`: Similar to `FootprintService`, fetches trades and uses Pandas to group by price and calculate volume distribution, POC, and VA.
+         *   `DeltaAnalysisService`: Leverages `FootprintService` to get bar-level data (especially `total_delta`). It then performs further calculations (CVD accumulation, ATR via `technical_analysis_utils.py`, MAs) using Pandas to derive CVD, DVPR, and DMRV metrics.
+         *   `MLPredictionService`: Contains an `MLModel` wrapper that simulates loading and prediction. It takes Pydantic feature models, converts them to Pandas DataFrames (mimicking real model input needs), and returns (simulated) Pydantic output models.
 *   **Database Schema (`db/models.py`):**
-    *   `TradeDB`: Stores individual trades, including price, volume, side, timestamp, exchange, symbol, trade ID, and aggressor side. Hypertable on `timestamp`.
-    *   `OrderBookSnapshotDB`: Stores periodic snapshots of the order book (bids/asks arrays as JSONB), timestamp, exchange, symbol. Hypertable on `timestamp`.
-    *   `TickerDB`: Stores ticker data (last price, 24h volume, etc.). Hypertable on `timestamp`.
-    *   (Other potential tables for user data, settings, etc., if features expand).
+         *   `TradeDB`: Stores individual trade records. Key columns: `timestamp`, `symbol`, `exchange`, `trade_id`, `price`, `volume`, `side`, `aggressor_side`. Hypertable on `timestamp`.
+         *   `OrderBookSnapshotDB`: Stores snapshots of order book levels (bids/asks as JSONB). Key columns: `timestamp`, `symbol`, `exchange`, `bids`, `asks`, `last_update_id`. Hypertable on `timestamp`.
+         *   `TickerDB`: Stores summary price/volume information. Key columns: `timestamp`, `symbol`, `exchange`, `last_price`, `volume_24h`. Hypertable on `timestamp`.
+         *   Hypertables are created using `SELECT create_hypertable(...)` in `db/init_db.py`.
 *   **API Design (`api/endpoints/`):**
-    *   RESTful principles are followed.
-    *   FastAPI used for high performance and automatic data validation/serialization with Pydantic.
+         *   Uses FastAPI routers for modularity. Pydantic models are used for request body validation and defining `response_model` for automatic serialization and API documentation (Swagger/OpenAPI).
     *   Key endpoint groups:
-        *   `/market_data/`: For order book, trades, footprint, volume profile, CVD, advanced delta.
-        *   `/ml/`: For ML predictions.
-        *   `/status/`: For application health/feed status.
-*   **Configuration (`core/config.py`):** Pydantic-settings for managing application settings via environment variables and `.env` files (e.g., `DATABASE_URL`, ML model paths, API keys).
+             *   `/market_data/`: Serves order book data, recent trades, footprint charts, volume profiles, CVD, and advanced delta metrics.
+             *   `/ml/`: Exposes endpoints for each (simulated) ML prediction type (momentum, breakout, absorption).
+             *   `/status/`: Provides health check for data ingestion feeds.
+     *   **Configuration (`core/config.py`):** `pydantic-settings` loads configuration from environment variables or `.env` file, including `DATABASE_URL` and paths to ML model files.
 
 ## 3. Frontend Architecture
-*   **Technology Stack:** React, TypeScript, Recharts (for charting), `react-router-dom` (for navigation), `react-datepicker`.
-*   **Core Components (Conceptual Groups):**
-    *   **Layout & Navigation (`App.tsx`, `pages/MarketViewPage.tsx`, `components/layout/GlobalControlsBar.tsx`):**
-        *   `App.tsx`: Main application shell, sets up routing and global context providers.
-        *   `MarketViewPage.tsx`: Primary view hosting all market analysis charts and tools.
-        *   `GlobalControlsBar.tsx`: Allows users to select global exchange, symbol, and timeframe.
-    *   **Data Display Widgets (`components/market/`):**
-        *   `OrderBookDepthChart.tsx`: Displays order book depth, imbalances, and OBDG.
-        *   `TimeAndSalesLog.tsx`: Shows a log of recent trades with filtering and large trade highlighting.
-        *   `FootprintChart.tsx`: Renders footprint bars with bid/ask volume per price, delta, POC, imbalances, unfinished auctions, and integrates ML prediction triggers.
-        *   `VolumeProfileChart.tsx`: Displays volume profile as a horizontal histogram with POC and VA.
-        *   `CVDChart.tsx`: Shows Cumulative Volume Delta as a line chart with divergence drawing tools.
-        *   `AdvancedDeltaMetricsChart.tsx`: Displays DVPR and DMRV as line charts.
-    *   **Services (`services/marketDataService.ts`):** Contains functions to fetch data from all backend API endpoints using the `fetch` API. TypeScript interfaces define data structures.
-    *   **State Management:**
-        *   `GlobalMarketContext.tsx`: Manages globally selected exchange, symbol, and timeframe.
-        *   Component-level state (`useState`, `useCallback`, `useMemo`): Used extensively within each chart/tool for managing local UI state, fetched data, and parameters.
+     *   **Technology Stack:** React (with Hooks), TypeScript, Recharts (for charting), `react-router-dom` (for navigation), `react-datepicker` (for date inputs), CSS (per-component or global).
+     *   **Directory Structure (`frontend/src/`):**
+         *   `App.tsx`: Main application component, sets up router and global context.
+         *   `index.tsx`: Renders `App` into the DOM.
+         *   `contexts/`: React Context API for global state (e.g., `GlobalMarketContext.tsx`).
+         *   `components/`: Reusable UI components.
+             *   `layout/`: Components like `GlobalControlsBar.tsx`.
+             *   `market/`: Charting and data display components (e.g., `FootprintChart.tsx`, `OrderBookDepthChart.tsx`).
+         *   `pages/`: Top-level page components (e.g., `MarketViewPage.tsx`).
+         *   `services/`: API interaction layer (`marketDataService.ts`).
+         *   `models/` (implicit via service interfaces): TypeScript interfaces matching backend Pydantic models for type safety.
+     *   **Core Components & Interactions:**
+         *   `GlobalMarketContext`: Provides shared state for `selectedExchange`, `selectedSymbol`, and `selectedGlobalTimeframe`.
+         *   `GlobalControlsBar`: Uses context to display and update global selections.
+         *   `MarketViewPage`: Consumes global context and passes `exchange`, `symbol`, and `globalTimeframe` to its child chart components. Uses a `chartKey` to ensure charts re-render on asset/timeframe change.
+         *   **Chart Components** (e.g., `FootprintChart`, `CVDChart`):
+             *   Receive `exchange`, `symbol`, `globalTimeframe` as props.
+             *   Manage their own local state for specific parameters (e.g., date ranges, indicator periods, ML prediction results).
+             *   Use `useEffect` hooks to:
+                 *   Synchronize their internal timeframe state with the `globalTimeframe` prop.
+                 *   Fetch data from `marketDataService.ts` when relevant props or parameters change.
+             *   Render visualizations using `Recharts`.
+             *   `FootprintChart` additionally handles user clicks on bars/cells to trigger ML predictions by collecting features and calling relevant functions in `marketDataService.ts`.
+         *   `marketDataService.ts`: Centralizes all `fetch` calls to backend API endpoints. Defines TypeScript interfaces for request payloads and response data, ensuring type safety and aligning with backend Pydantic models.
+     *   **State Management:**
+         *   `GlobalMarketContext` for globally shared selections (exchange, symbol, timeframe).
+         *   Local component state (`useState`, `useCallback`, `useMemo`) within each chart/tool for managing UI parameters, fetched data, loading/error states, and user interactions like drawing or ML prediction results.
 *   **ML Integration:**
-    *   The `FootprintChart.tsx` allows users to trigger ML predictions by clicking on bars (for momentum, breakout) or price cells (for absorption).
-    *   Collected features are sent to the backend via `marketDataService.ts`.
+         *   User interaction (e.g., click on a footprint chart bar/cell) in a component like `FootprintChart.tsx` triggers a specific ML prediction.
+         *   The component gathers necessary features from its current data (e.g., bar delta, volume, timestamp, clicked price level).
+         *   A call is made to the corresponding prediction function in `marketDataService.ts`.
     *   Prediction results are displayed in dedicated UI sections within the `FootprintChart`.
 
 ## 4. Data Flow

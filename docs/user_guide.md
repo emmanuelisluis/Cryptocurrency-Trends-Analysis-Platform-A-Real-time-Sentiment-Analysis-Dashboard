@@ -132,7 +132,29 @@ This guide provides instructions on how to use the Crypto Dashboard.
     *   **Probabilities:** Shows the model's confidence for each of the three outcomes.
 *   **Dismissing Predictions:** Each prediction box has a "Dismiss" button to clear it from view. New predictions replace old ones of the same type.
 
-## 6. Troubleshooting / FAQ (Placeholder)
+## 6. News & Sentiment Analysis Page
+The dashboard includes a dedicated page for viewing cryptocurrency-related news and associated sentiment.
+
+### Accessing the Page
+*   Navigate to the "News & Sentiment" page using the link in the top global controls bar.
+
+### Reading News
+*   The page displays a list of recent news articles fetched from external sources (e.g., CryptoCompare).
+*   Each news card typically shows:
+    *   **Headline:** Clickable, linking to the original article.
+    *   **Image:** If available.
+    *   **Source:** The news provider (e.g., "Crypto News Today").
+    *   **Date:** Publication date.
+    *   **Summary:** A brief snippet of the article content.
+
+### Interpreting Sentiment (Per Article)
+*   Alongside each news article, a (currently simulated) sentiment analysis is displayed:
+    *   **Label:** "Positive", "Negative", or "Neutral".
+    *   **Score:** A numerical representation of the sentiment confidence (e.g., 0.0 to 1.0).
+    *   **Indicator:** A colored dot (green for positive, red for negative, gray for neutral) provides a quick visual cue.
+*   This sentiment is derived from the article's headline and/or summary.
+
+## 7. Troubleshooting / FAQ (Placeholder)
 *   **No Data Displayed:**
     *   Ensure correct exchange and symbol are selected.
     *   Check if the selected date range has trading activity for the chosen asset.

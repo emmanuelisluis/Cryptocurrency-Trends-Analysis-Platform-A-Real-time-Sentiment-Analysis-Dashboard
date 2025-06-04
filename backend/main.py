@@ -12,6 +12,8 @@ from fastapi import FastAPI
 from backend.app.api.endpoints import market_data as market_data_router
 from backend.app.api.endpoints import ml_predictions as ml_predictions_router
 from backend.app.api.endpoints import status as status_router
+from backend.app.api.endpoints import news as news_router
+from backend.app.api.endpoints import sentiment as sentiment_router # Add this
 from backend.app.globals import (
     data_ingestion_service_instance, # For direct access in shutdown
     get_data_ingestion_service,
@@ -44,6 +46,8 @@ app = FastAPI(
 app.include_router(status_router.router, prefix="/api/v1", tags=["Status"])
 app.include_router(market_data_router.router, prefix="/api/v1/market_data", tags=["Market Data"])
 app.include_router(ml_predictions_router.router, prefix="/api/v1/ml", tags=["ML Predictions"])
+app.include_router(news_router.router, prefix="/api/v1/news", tags=["News"])
+app.include_router(sentiment_router.router, prefix="/api/v1/sentiment", tags=["Sentiment Analysis"]) # Add this
 
 # Lifespan events for managing background services like DataIngestionService
 @app.on_event("startup")

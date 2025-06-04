@@ -6,6 +6,7 @@
  */
 import React from 'react';
 import { useGlobalMarket } from '../../contexts/GlobalMarketContext';
+import { Link } from 'react-router-dom'; // Add this import
 import './GlobalControlsBar.css';
 
 // TODO: Replace MOCK_EXCHANGES and MOCK_SYMBOLS_BY_EXCHANGE with dynamic data.
@@ -125,6 +126,12 @@ export const GlobalControlsBar: React.FC = () => {
                     ))}
                 </select>
             </div>
+
+            {/* Navigation Links */}
+            <nav className="control-group nav-links"> {/* Changed div to nav */}
+                <Link to="/market" className="nav-link">Market View</Link>
+                <Link to="/news-sentiment" className="nav-link">News & Sentiment</Link>
+            </nav>
         </div>
     );
 };

@@ -1,0 +1,30 @@
+.news-sentiment-page {
+    max-width: 1200px; /* Consistent max-width for content area */
+    margin: 0 auto; /* Center the page content */
+    padding: 20px; /* Consistent padding with other pages like MarketViewPage */
+    background-color: #f4f7f6; /* Light background for the page */
+    min-height: 85vh; /* Ensure page takes up significant viewport height, adjust as needed */
+}
+
+.page-header h1 {
+    text-align: center;
+    margin-bottom: 30px;
+    color: #2c3e50; /* Darker, more professional header color */
+    font-size: 2.5em; /* Larger page title */
+    font-weight: 600;
+}
+
+.news-section {
+    margin-bottom: 30px;
+}
+
+.sentiment-section {
+    /* Styles removed for now as the section is empty.
+       Can be re-added when content for page-level sentiment summaries is developed.
+    background-color: #ffffff;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+    */
+    min-height: 50px; /* Retain a small height to acknowledge its presence if needed for layout */
+}

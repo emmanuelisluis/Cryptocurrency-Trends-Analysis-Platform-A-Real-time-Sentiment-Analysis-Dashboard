@@ -37,6 +37,8 @@ This document outlines the technical architecture of the Crypto Dashboard applic
          *   `VolumeProfileService`: Similar to `FootprintService`, fetches trades and uses Pandas to group by price and calculate volume distribution, POC, and VA.
          *   `DeltaAnalysisService`: Leverages `FootprintService` to get bar-level data (especially `total_delta`). It then performs further calculations (CVD accumulation, ATR via `technical_analysis_utils.py`, MAs) using Pandas to derive CVD, DVPR, and DMRV metrics.
          *   `MLPredictionService`: Contains an `MLModel` wrapper that simulates loading and prediction. It takes Pydantic feature models, converts them to Pandas DataFrames (mimicking real model input needs), and returns (simulated) Pydantic output models.
+         *   `NewsService`: Fetches and caches news articles from external APIs (e.g., CryptoCompare). Provides dummy data if API key is missing.
+         *   `SentimentService`: Provides (currently simulated) sentiment analysis for given text input. Uses basic keyword heuristics or random scoring for V1.
 *   **Database Schema (`db/models.py`):**
          *   `TradeDB`: Stores individual trade records. Key columns: `timestamp`, `symbol`, `exchange`, `trade_id`, `price`, `volume`, `side`, `aggressor_side`. Hypertable on `timestamp`.
          *   `OrderBookSnapshotDB`: Stores snapshots of order book levels (bids/asks as JSONB). Key columns: `timestamp`, `symbol`, `exchange`, `bids`, `asks`, `last_update_id`. Hypertable on `timestamp`.
@@ -47,8 +49,10 @@ This document outlines the technical architecture of the Crypto Dashboard applic
     *   Key endpoint groups:
              *   `/market_data/`: Serves order book data, recent trades, footprint charts, volume profiles, CVD, and advanced delta metrics.
              *   `/ml/`: Exposes endpoints for each (simulated) ML prediction type (momentum, breakout, absorption).
+             *   `/news/`: For fetching crypto news.
+             *   `/sentiment/`: For performing sentiment analysis.
              *   `/status/`: Provides health check for data ingestion feeds.
-     *   **Configuration (`core/config.py`):** `pydantic-settings` loads configuration from environment variables or `.env` file, including `DATABASE_URL` and paths to ML model files.
+     *   **Configuration (`core/config.py`):** `pydantic-settings` loads configuration from environment variables or `.env` file, including `DATABASE_URL`, paths to ML model files, and News API settings.
 
 ## 3. Frontend Architecture
      *   **Technology Stack:** React (with Hooks), TypeScript, Recharts (for charting), `react-router-dom` (for navigation), `react-datepicker` (for date inputs), CSS (per-component or global).
@@ -59,7 +63,8 @@ This document outlines the technical architecture of the Crypto Dashboard applic
          *   `components/`: Reusable UI components.
              *   `layout/`: Components like `GlobalControlsBar.tsx`.
              *   `market/`: Charting and data display components (e.g., `FootprintChart.tsx`, `OrderBookDepthChart.tsx`).
-         *   `pages/`: Top-level page components (e.g., `MarketViewPage.tsx`).
+             *   `news/`: Components related to news display (e.g., `NewsDisplay.tsx`).
+         *   `pages/`: Top-level page components (e.g., `MarketViewPage.tsx`, `NewsSentimentPage.tsx`).
          *   `services/`: API interaction layer (`marketDataService.ts`).
          *   `models/` (implicit via service interfaces): TypeScript interfaces matching backend Pydantic models for type safety.
      *   **Core Components & Interactions:**
@@ -74,10 +79,14 @@ This document outlines the technical architecture of the Crypto Dashboard applic
                  *   Fetch data from `marketDataService.ts` when relevant props or parameters change.
              *   Render visualizations using `Recharts`.
              *   `FootprintChart` additionally handles user clicks on bars/cells to trigger ML predictions by collecting features and calling relevant functions in `marketDataService.ts`.
-         *   `marketDataService.ts`: Centralizes all `fetch` calls to backend API endpoints. Defines TypeScript interfaces for request payloads and response data, ensuring type safety and aligning with backend Pydantic models.
+         *   `marketDataService.ts`: Centralizes all `fetch` calls to backend API endpoints. Defines TypeScript interfaces for request payloads and response data, ensuring type safety and aligning with backend Pydantic models. Includes functions for fetching news and analyzing sentiment.
      *   **State Management:**
          *   `GlobalMarketContext` for globally shared selections (exchange, symbol, timeframe).
-         *   Local component state (`useState`, `useCallback`, `useMemo`) within each chart/tool for managing UI parameters, fetched data, loading/error states, and user interactions like drawing or ML prediction results.
+         *   Local component state (`useState`, `useCallback`, `useMemo`) within each chart/tool (and components like `NewsDisplay.tsx`) for managing UI parameters, fetched data, loading/error states, and user interactions.
+*   **News & Sentiment Integration:**
+         *   `NewsDisplay.tsx` fetches news via `marketDataService.ts`.
+         *   For each news article, it then makes a separate call to `marketDataService.ts` to get (simulated) sentiment for the article's title/body.
+         *   Results are displayed with sentiment indicators.
 *   **ML Integration:**
          *   User interaction (e.g., click on a footprint chart bar/cell) in a component like `FootprintChart.tsx` triggers a specific ML prediction.
          *   The component gathers necessary features from its current data (e.g., bar delta, volume, timestamp, clicked price level).
@@ -95,11 +104,21 @@ This document outlines the technical architecture of the Crypto Dashboard applic
     2.  React component (e.g., `FootprintChart.tsx`) triggers a data fetch using a function from `marketDataService.ts`.
     3.  `marketDataService.ts` makes an HTTP GET or POST request to the relevant FastAPI backend endpoint.
     4.  FastAPI endpoint receives the request, validates parameters (via Pydantic).
-    5.  The endpoint calls the appropriate service method (e.g., `FootprintService.get_footprint_data`).
-    6.  The service method queries TimescaleDB (often using Pandas for complex aggregations like in Footprint, Volume Profile, Advanced Delta).
+    5.  The endpoint calls the appropriate service method (e.g., `FootprintService.get_footprint_data`, `NewsService.get_crypto_news`, `SentimentService.analyze_sentiment`).
+    6.  The service method queries TimescaleDB (for market data), calls external APIs (for news), or executes internal logic (for simulated sentiment/ML). Pandas may be used for complex aggregations.
     7.  Data is processed, aggregated, and structured into Pydantic response models.
     8.  FastAPI automatically serializes the Pydantic response model to JSON and sends it back to the frontend.
     9.  The frontend service function receives the JSON, which is then used to update React component state, causing a re-render to display the new data/chart.
+*   **News Fetching Flow:**
+    1.  `NewsSentimentPage.tsx` (via `NewsDisplay.tsx`) triggers `fetchCryptoNews` in `marketDataService.ts`.
+    2.  Request to `/api/v1/news/crypto`.
+    3.  `NewsService` checks cache; if stale/miss, calls CryptoCompare API (or returns dummy data).
+    4.  News articles are returned to the frontend.
+*   **Sentiment Analysis Flow (per article):**
+    1.  `NewsDisplay.tsx` (after receiving news) triggers `analyzeSentiment` in `marketDataService.ts` for each article's text.
+    2.  POST request to `/api/v1/sentiment/analyze` with the article text.
+    3.  `SentimentService` performs simulated analysis.
+    4.  Sentiment result (label, score) is returned to `NewsDisplay.tsx` and associated with the article.
 *   **ML Prediction Flow:**
     1.  User clicks on a specific element in `FootprintChart.tsx` (bar or price cell).
     2.  The click handler gathers relevant features from the local chart data.

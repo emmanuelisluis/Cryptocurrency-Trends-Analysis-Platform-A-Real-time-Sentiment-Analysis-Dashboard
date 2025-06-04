@@ -29,6 +29,12 @@ This document provides instructions for setting up the backend of the Crypto Das
         When using `docker-compose.yml` provided, this will be set to `postgresql://user:password@db:5432/crypto_dashboard` (or your chosen credentials).
     *   **ML Model Paths:** As defined in `backend/app/core/config.py`, paths like `MOMENTUM_SUSTAINABILITY_MODEL_PATH` point to where model files are expected. For simulation, these files don't need to exist. For actual models, ensure these paths are correct relative to the backend's root directory or use absolute paths. Example default: `MOMENTUM_SUSTAINABILITY_MODEL_PATH=backend/app/ml_models/momentum_model.pkl`.
     *   **Application Settings:** `APP_HOST`, `APP_PORT`, `LOG_LEVEL` can also be set in the `.env` file to override defaults in `config.py`.
+    *   **News API Settings:**
+        *   `CRYPTOCOMPARE_API_KEY: Optional[str]`: Your API key for CryptoCompare news. If not provided or set to the placeholder value "YOUR_CRYPTOCOMPARE_API_KEY_HERE", the service will return dummy news data.
+        *   `CRYPTOCOMPARE_NEWS_URL: str`: Base URL for the CryptoCompare news API (default is usually fine).
+        *   `NEWS_CACHE_TTL_SECONDS: int`: Cache duration for news articles (default is 10 minutes).
+*   **Dependencies:**
+    *   Key dependencies managed by Poetry include FastAPI, Uvicorn, SQLAlchemy, Pandas, Psycopg2 (for PostgreSQL interaction), and `httpx` (for asynchronous HTTP requests, e.g., in `NewsService`).
 *   **Database Initialization (Schema Creation):**
     *   The `backend/app/db/init_db.py` script creates database tables and TimescaleDB hypertables based on SQLAlchemy models defined in `backend/app/db/models.py`.
     *   Ensure your `DATABASE_URL` in `.env` is correctly configured and the database is accessible.
@@ -78,13 +84,19 @@ This document provides instructions for setting up the backend of the Crypto Das
     *   `volume_profile_service.py` (`VolumeProfileService`): Calculates Volume Profile (volume at price) for specified periods or ranges, including POC and VA, using Pandas for aggregation.
     *   `delta_analysis_service.py` (`DeltaAnalysisService`): Calculates CVD and advanced delta metrics (DVPR, DMRV). Uses `FootprintService` to get bar delta data and then performs further calculations (e.g., ATR, moving averages) using Pandas.
     *   `ml_prediction_service.py` (`MLPredictionService`): Manages simulated ML models. Includes an `MLModel` wrapper for placeholder loading and prediction logic. Provides methods to get predictions for defined ML tasks (Momentum Sustainability, Breakout Viability, Absorption Outcome).
+    *   `news_service.py` (`NewsService`): Fetches news from CryptoCompare API, with caching and dummy data fallback.
+    *   `sentiment_service.py` (`SentimentService`): Provides (simulated) sentiment analysis on text.
 *   **API Endpoints (`backend/app/api/endpoints/`):** Define the HTTP routes.
     *   `market_data.py`: Contains routes for all market data related queries (order book, trades, footprint, volume profile, CVD, advanced delta metrics).
     *   `ml_predictions.py`: Contains routes for ML model predictions.
+    *   `news.py`: Contains routes for fetching cryptocurrency news.
+    *   `sentiment.py`: Contains routes for sentiment analysis.
     *   `status.py`: Contains routes for checking data feed health and application status.
     *   Uses FastAPI `APIRouter`, Pydantic models for request body validation and response serialization. Depends on service classes for business logic.
 *   **Pydantic Models (`backend/app/models/`):**
     *   `exchange_data.py`: Pydantic models for raw/normalized data from exchange streams (e.g., `TradeData`, `OrderBookData`). Used internally by ingestion services.
+    *   `news_models.py`: Pydantic models for structuring news articles and API responses from news sources.
+    *   `sentiment_models.py`: Pydantic models for sentiment analysis input and output.
     *   `order_book_models.py`, `trade_models.py`, `footprint_models.py`, `volume_profile_models.py`, `delta_analysis_models.py`: Pydantic models defining the structure of API responses for different market data endpoints.
     *   `ml_prediction_models.py`: Pydantic models for ML feature inputs and prediction outputs.
     *   `status_models.py`: Pydantic models for the feed health status API response.

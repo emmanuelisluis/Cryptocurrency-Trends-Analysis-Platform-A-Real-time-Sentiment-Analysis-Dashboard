@@ -49,6 +49,20 @@ class Settings(BaseSettings):
         description="Path to the absorption outcome model file."
     )
 
+    # News API Configuration (CryptoCompare)
+    CRYPTOCOMPARE_API_KEY: Optional[str] = Field(
+        default="YOUR_CRYPTOCOMPARE_API_KEY_HERE",
+        description="API key for CryptoCompare news API. User needs to replace this."
+    )
+    CRYPTOCOMPARE_NEWS_URL: str = Field(
+        default="https://min-api.cryptocompare.com/data/v2/news/",
+        description="Base URL for the CryptoCompare news API."
+    )
+    NEWS_CACHE_TTL_SECONDS: int = Field(
+        default=60 * 10, # 10 minutes
+        description="Time-to-live (TTL) in seconds for caching news articles."
+    )
+
     # Pydantic-settings configuration
     model_config = SettingsConfigDict(
         env_file=".env",              # Load from .env file

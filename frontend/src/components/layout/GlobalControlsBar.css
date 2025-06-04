@@ -47,3 +47,36 @@
 #symbol-select {
     /* Specific styles if needed */
 }
+
+/* Styles for Navigation Links */
+.nav-links {
+    margin-left: auto; /* Pushes nav links to the right */
+    display: flex;
+    align-items: center;
+    gap: 5px; /* Adjusted gap for closer links if preferred, or keep at 10px */
+}
+
+.nav-link {
+    padding: 8px 15px;
+    text-decoration: none;
+    color: #007bff; /* Primary link color */
+    font-weight: 500;
+    border-radius: 4px;
+    transition: background-color 0.2s ease-in-out, color 0.2s ease-in-out;
+    border: 1px solid transparent; /* Ensures consistent height, prevents layout shift on hover if border is added */
+}
+
+.nav-link:hover {
+    background-color: #007bff; /* Background becomes link color on hover */
+    color: #ffffff; /* Text becomes white on hover */
+    text-decoration: none;
+}
+
+/* Active NavLink styling (if using NavLink and an 'active' class is applied) */
+/* Example:
+.nav-link.active {
+    background-color: #0056b3;
+    color: #ffffff;
+    font-weight: bold;
+}
+*/

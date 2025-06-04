@@ -33,6 +33,9 @@ This project is a high-performance, interactive cryptocurrency dashboard focused
     *   Momentum Sustainability Score.
     *   Breakout Viability Probability.
     *   Absorption Event Outcome Classification (Reversal, Continuation, Consolidation).
+*   **Crypto News Aggregation & (Simulated) Sentiment Analysis Section:**
+    *   Dedicated page for viewing latest crypto news.
+    *   Per-article (simulated) sentiment analysis (Positive, Negative, Neutral).
 *   **Global Market & Timeframe Selection:**
     *   Context-aware controls for selecting exchange, trading symbol, and global chart timeframe.
 *   **Dockerized Environment:**

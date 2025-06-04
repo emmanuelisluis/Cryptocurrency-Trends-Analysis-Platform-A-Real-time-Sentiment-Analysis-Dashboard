@@ -287,6 +287,86 @@ export async function fetchOrderBookSnapshot(
     }
 }
 
+// --- News Data ---
+export interface NewsSourceInfo {
+    name: string;
+    lang: string;
+    img: string; // HttpUrl maps to string
+}
+
+export interface NewsArticle {
+    id: string;
+    guid: string; // HttpUrl maps to string (URL to article)
+    published_on: string; // ISO datetime string (or Date)
+    imageurl?: string | null; // HttpUrl maps to string
+    title: string;
+    url: string; // HttpUrl maps to string
+    source: string;
+    body?: string | null;
+    tags?: string | null;
+    categories?: string | null;
+    upvotes?: string | null;
+    downvotes?: string | null;
+    lang: string;
+    source_info: NewsSourceInfo;
+}
+
+/**
+ * Fetches crypto news articles from the backend API.
+ * @param lang Language for the news (e.g., "EN").
+ * @param categories Optional comma-separated string of categories to filter by.
+ * @returns A Promise resolving to an array of NewsArticle objects.
+ * @throws An error if the API call fails or returns a non-OK status.
+ */
+export async function fetchCryptoNews(lang: string = "EN", categories?: string | null): Promise<NewsArticle[]> {
+    const params = new URLSearchParams();
+    params.append('lang', lang);
+    if (categories) {
+        params.append('categories', categories);
+    }
+    const response = await fetch(`${API_BASE_URL}/news/crypto?${params.toString()}`);
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ detail: 'Network response was not ok when fetching news.' }));
+        throw new Error(errorData.detail || 'Failed to fetch crypto news');
+    }
+    // The backend's /api/v1/news/crypto endpoint is defined to return List[NewsArticle] directly.
+    return response.json();
+}
+
+// --- Sentiment Analysis ---
+export interface SentimentInput {
+    text: string;
+    // language?: string; // Backend model has this, but we'll use default for now
+}
+
+export interface SentimentOutput {
+    text: string;
+    sentiment_label: 'positive' | 'negative' | 'neutral' | string; // Allow string for flexibility from API
+    sentiment_score: number;
+    model_version: string;
+}
+
+/**
+ * Analyzes the sentiment of a given text.
+ * @param input The text input for sentiment analysis.
+ * @returns A Promise resolving to the SentimentOutput.
+ * @throws An error if the API call fails or returns a non-OK status.
+ */
+export async function analyzeSentiment(input: SentimentInput): Promise<SentimentOutput> {
+    const response = await fetch(`${API_BASE_URL}/sentiment/analyze`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(input),
+    });
+    if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ detail: 'Network response was not ok during sentiment analysis.' }));
+        throw new Error(errorData.detail || 'Failed to analyze sentiment');
+    }
+    return response.json();
+}
+
 
 /**
  * Fetches footprint chart data from the backend API.
